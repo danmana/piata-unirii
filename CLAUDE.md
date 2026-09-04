@@ -6,6 +6,7 @@
 2. Name it `<model>-<effort>-NN`, using the next free two-digit suffix.
 3. Create only `runs/<name>/`, with `index.html` as its entry point and all supporting files inside it.
 4. On completion, append `{ "name", "provider", "agent", "model", "effort", "startedAt", "durationSeconds" }` to `comparison/runs.json`. Use `OpenAI` / `Codex` or `Anthropic` / `Claude Code`, and record elapsed wall-clock time in whole seconds.
-5. Use only relative local paths. The result must run offline with no network requests.
+5. Commit only `runs/<name>/` and `comparison/runs.json`; choose an appropriate commit message and do not include unrelated changes.
+6. Use only relative local paths. The result must run offline with no network requests.
 
 Do not edit `prompt.md`, other runs, or comparison files other than `comparison/runs.json`.
