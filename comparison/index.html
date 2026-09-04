@@ -13,9 +13,9 @@
     main { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); height: calc(100% - 49px); }
     section { display: grid; grid-template-rows: auto 1fr; min-width: 0; border-right: 1px solid #333; }
     section:last-child { border: 0; }
-    .bar { display: flex; gap: 10px; align-items: center; min-height: 42px; padding: 7px 10px; background: #1b1b1b; }
-    select { min-width: 0; max-width: 60%; background: #292929; color: inherit; border: 1px solid #444; padding: 5px; }
-    .meta { color: #aaa; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .bar { display: grid; grid-template-columns: minmax(150px, auto) minmax(0, 1fr) auto; gap: 10px; align-items: center; min-height: 42px; padding: 7px 10px; background: #1b1b1b; }
+    select { min-width: 0; background: #292929; color: inherit; border: 1px solid #444; padding: 5px; }
+    .meta { color: #aaa; font-size: 12px; }
     a { margin-left: auto; color: #9cc8ff; }
     iframe { width: 100%; height: 100%; border: 0; background: #222; }
     .empty { display: grid; place-items: center; color: #888; }
@@ -50,7 +50,9 @@
         const show = () => {
           const run = runs[Number(select.value)];
           const src = `../runs/${encodeURIComponent(run.name)}/index.html`;
-          meta.textContent = `${run.model} · ${run.effort}`;
+          const startedAt = run.startedAt || 'unknown';
+          const duration = Number.isFinite(run.durationSeconds) ? `${run.durationSeconds}s` : 'unknown';
+          meta.textContent = `${run.provider || 'Unknown provider'} · ${run.agent || 'Unknown agent'} · ${run.model} · ${run.effort} · started ${startedAt} · duration ${duration}`;
           link.href = src;
           frame.src = src;
           frame.title = run.name;
