@@ -7,5 +7,14 @@
     "agent": "Codex",
     "startedAt": "2026-09-04T08:03:13Z",
     "durationSeconds": 707
+  },
+  {
+    "name": "fable-5.1-xhigh-01",
+    "provider": "Anthropic",
+    "agent": "Claude Code",
+    "model": "fable-5.1",
+    "effort": "xhigh",
+    "startedAt": "2026-09-04T08:46:35Z",
+    "durationSeconds": 4800
   }
 ]

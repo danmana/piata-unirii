@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="data:,">
+  <title>Piața Unirii, Cluj-Napoca — voxel simulation</title>
+  <style>
+    :root { color-scheme: dark; }
+    html, body { margin: 0; height: 100%; overflow: hidden; background: #1a2330; font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif; color: #f2efe8; }
+    canvas { display: block; }
+    #hud { position: fixed; left: 16px; top: 16px; pointer-events: none; user-select: none; max-width: 330px; }
+    #hud h1 { margin: 0; font-size: 17px; font-weight: 650; letter-spacing: 0.02em; text-shadow: 0 1px 3px rgba(0,0,0,0.6); }
+    #hud h1 small { display: block; font-size: 11px; font-weight: 500; opacity: 0.8; letter-spacing: 0.12em; text-transform: uppercase; margin-top: 3px; }
+    #hud .keys { margin-top: 10px; font-size: 12px; line-height: 1.55; opacity: 0.92; text-shadow: 0 1px 2px rgba(0,0,0,0.7); }
+    #hud .keys kbd { display: inline-block; min-width: 14px; text-align: center; padding: 0 5px; border-radius: 4px; background: rgba(255,255,255,0.14); border: 1px solid rgba(255,255,255,0.25); font: 600 11px/18px ui-monospace, "SF Mono", Menlo, monospace; margin-right: 6px; }
+    #hud .keys span.mode { color: #ffd39a; font-weight: 600; }
+    #status { position: fixed; right: 14px; bottom: 12px; font: 500 11px/1.4 ui-monospace, "SF Mono", Menlo, monospace; opacity: 0.75; text-align: right; pointer-events: none; text-shadow: 0 1px 2px rgba(0,0,0,0.7); }
+    #toolbar { position: fixed; right: 14px; top: 14px; display: flex; gap: 6px; }
+    #toolbar button { pointer-events: auto; cursor: pointer; background: rgba(20,26,36,0.62); border: 1px solid rgba(255,255,255,0.22); color: #f2efe8; border-radius: 6px; padding: 6px 10px; font: 600 12px system-ui, sans-serif; backdrop-filter: blur(6px); }
+    #toolbar button:hover { background: rgba(60,70,90,0.7); }
+    #toolbar button.active { border-color: #ffd39a; color: #ffd39a; }
+    #loading { position: fixed; inset: 0; display: grid; place-items: center; background: radial-gradient(ellipse at 50% 40%, #2c4a6e 0%, #131c27 70%); transition: opacity 0.6s; z-index: 5; }
+    #loading .box { text-align: center; }
+    #loading h2 { margin: 0 0 6px; font-size: 22px; font-weight: 650; }
+    #loading p { margin: 0; opacity: 0.8; font-size: 13px; min-height: 18px; }
+    #loading .bar { width: 260px; height: 4px; background: rgba(255,255,255,0.12); border-radius: 2px; margin: 16px auto 0; overflow: hidden; }
+    #loading .bar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #f0b067, #ffd9a0); transition: width 0.3s; }
+    #loading.hidden { opacity: 0; pointer-events: none; }
+    #error { position: fixed; inset: auto 16px 16px 16px; display: none; background: rgba(120, 30, 30, 0.92); color: #fff; padding: 12px 14px; border-radius: 8px; font: 13px/1.4 ui-monospace, Menlo, monospace; white-space: pre-wrap; z-index: 9; }
+  </style>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "./vendor/three.module.js",
+        "three/addons/controls/OrbitControls.js": "./vendor/OrbitControls.js"
+      }
+    }
+  </script>
+</head>
+<body>
+  <div id="loading"><div class="box"><h2>Piața Unirii · Cluj-Napoca</h2><p id="loading-text">Preparing voxels…</p><div class="bar"><i id="loading-bar"></i></div></div></div>
+  <div id="hud">
+    <h1>Piața Unirii<small>Cluj-Napoca · voxel miniature</small></h1>
+    <div class="keys">
+      <div><kbd>Drag</kbd>rotate · <kbd>Right-drag</kbd>pan · <kbd>Scroll</kbd>zoom</div>
+      <div><kbd>R</kbd>re-centre on St. Michael's &amp; Matthias Corvinus</div>
+      <div><kbd>F</kbd>cinematic flyover</div>
+      <div><kbd>T</kbd>time of day · <span class="mode" id="mode-label">Clear day</span></div>
+      <div><kbd>V</kbd>street level / aerial</div>
+      <div><kbd>G</kbd>regenerate crowds &amp; details</div>
+    </div>
+  </div>
+  <div id="toolbar">
+    <button id="btn-recenter" title="Re-centre (R)">⌖ Centre</button>
+    <button id="btn-fly" title="Flyover (F)">▶ Flyover</button>
+    <button id="btn-time" title="Time of day (T)">☀ Day</button>
+    <button id="btn-view" title="Street / aerial (V)">⇅ View</button>
+  </div>
+  <div id="status"></div>
+  <div id="error"></div>
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
