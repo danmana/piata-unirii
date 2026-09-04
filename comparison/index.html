@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Three.js run comparison</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body { margin: 0; background: #111; color: #eee; font: 14px system-ui, sans-serif; }
+    header { display: flex; gap: 12px; align-items: center; padding: 10px 14px; border-bottom: 1px solid #333; }
+    header strong { margin-right: auto; }
+    main { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); height: calc(100% - 49px); }
+    section { display: grid; grid-template-rows: auto 1fr; min-width: 0; border-right: 1px solid #333; }
+    section:last-child { border: 0; }
+    .bar { display: flex; gap: 10px; align-items: center; min-height: 42px; padding: 7px 10px; background: #1b1b1b; }
+    select { min-width: 0; max-width: 60%; background: #292929; color: inherit; border: 1px solid #444; padding: 5px; }
+    .meta { color: #aaa; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    a { margin-left: auto; color: #9cc8ff; }
+    iframe { width: 100%; height: 100%; border: 0; background: #222; }
+    .empty { display: grid; place-items: center; color: #888; }
+    @media (max-width: 900px) { main { grid-template-columns: 1fr; grid-template-rows: repeat(2, minmax(0, 1fr)); } }
+  </style>
+</head>
+<body>
+  <header><strong>Run comparison</strong><span>Click a scene before using its keyboard controls.</span></header>
+  <main id="comparison"></main>
+  <script type="module">
+    const root = document.querySelector('#comparison');
+    const runs = await fetch('./runs.json').then(response => {
+      if (!response.ok) throw new Error(`Could not load runs.json (${response.status})`);
+      return response.json();
+    });
+
+    if (!runs.length) {
+      root.className = 'empty';
+      root.textContent = 'No runs yet.';
+    } else {
+      const makePane = selectedIndex => {
+        const section = document.createElement('section');
+        section.innerHTML = '<div class="bar"><select></select><span class="meta"></span><a target="_blank" rel="noopener">Open</a></div><iframe></iframe>';
+        const select = section.querySelector('select');
+        const meta = section.querySelector('.meta');
+        const link = section.querySelector('a');
+        const frame = section.querySelector('iframe');
+
+        runs.forEach((run, index) => select.add(new Option(run.name, index)));
+        select.value = Math.min(selectedIndex, runs.length - 1);
+
+        const show = () => {
+          const run = runs[Number(select.value)];
+          const src = `../runs/${encodeURIComponent(run.name)}/index.html`;
+          meta.textContent = `${run.model} · ${run.effort}`;
+          link.href = src;
+          frame.src = src;
+          frame.title = run.name;
+        };
+
+        select.addEventListener('change', show);
+        show();
+        return section;
+      };
+
+      root.append(makePane(0), makePane(1));
+    }
+  </script>
+</body>
+</html>
