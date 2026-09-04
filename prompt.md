@@ -29,6 +29,27 @@ Prioritize geographic and architectural recognizability over procedural randomne
   - **[F]** Toggle cinematic flyover mode: slowly orbit the square at rooftop height, then rise into an aerial view.
   - **[T]** Toggle Time of Day: Clear Day / Golden-Hour Sunset.
   - **[V]** Toggle street-level / aerial overview camera presets.
+  - **[L]** Toggle floating landmark labels.
+
+
+#### OPTIONAL LANDMARK LABELS
+
+Provide an optional set of floating labels for important recognizable buildings and features.
+
+- Labels must be hidden by default and toggled with **[L]**.
+- Anchor labels to their corresponding world positions and keep them facing the camera.
+- Keep labels subtle, legible and visually consistent with the miniature architectural-model aesthetic.
+- Prevent excessive overlap and hide labels that are off-screen or too distant.
+- Label only significant named landmarks and features, including:
+  - St. Michael’s Church;
+  - Matthias Corvinus Monument;
+  - Bánffy Palace;
+  - Mirror Buildings;
+  - former Hotel Continental;
+  - Roman Napoca archaeological window;
+  - southern fountain area;
+  - major named streets where useful.
+- Labels are an informational aid, not a substitute for geographic or architectural recognizability.
 
 
 #### WORLD SCALE & URBAN TOPOGRAPHY
