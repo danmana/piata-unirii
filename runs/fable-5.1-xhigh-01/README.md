@@ -11,7 +11,7 @@ Open `index.html` over HTTP (ES modules; the comparison page does this). No netw
 
 - Left-drag rotate · right-drag pan · scroll zoom
 - `R` re-centre on the church and monument · `F` cinematic flyover · `T` day / golden-hour
-- `V` street level / aerial · `G` regenerate crowds, vehicles, café furniture and window lights
+- `V` street level / aerial · `L` floating landmark labels (hidden by default) · `G` regenerate crowds, vehicles, café furniture and window lights
 
 ## Layout
 
@@ -22,4 +22,5 @@ Open `index.html` over HTTP (ES modules; the comparison page does this). No netw
 - `src/city.js` — outer blocks (LOD 1/2/3), hills, forests, distant blocks
 - `src/props.js` — trees, benches, lamps, café terraces, bikes, fountain jets
 - `src/agents.js` — pedestrians, cyclists, pigeons, vehicles
+- `src/labels.js` — optional landmark/street labels (DOM overlay pinned to world anchors)
 - `src/sky.js`, `src/materials.js`, `src/world.js`, `src/main.js`

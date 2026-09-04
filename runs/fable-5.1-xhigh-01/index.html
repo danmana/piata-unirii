@@ -27,6 +27,20 @@
     #loading .bar { width: 260px; height: 4px; background: rgba(255,255,255,0.12); border-radius: 2px; margin: 16px auto 0; overflow: hidden; }
     #loading .bar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #f0b067, #ffd9a0); transition: width 0.3s; }
     #loading.hidden { opacity: 0; pointer-events: none; }
+    #labels { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 2; }
+    .lbl { position: absolute; left: 0; top: 0; width: 0; height: 0; opacity: 0; transition: opacity 0.25s; will-change: transform; }
+    .lbl.on { opacity: 1; }
+    .lbl::after { content: ""; position: absolute; left: -3px; top: -3px; width: 6px; height: 6px; border-radius: 50%; background: #f4efe3; box-shadow: 0 0 0 1.5px rgba(30,36,46,0.7), 0 1px 3px rgba(0,0,0,0.5); }
+    .lbl-stem { position: absolute; left: -0.5px; bottom: 0; width: 1px; height: 30px; background: linear-gradient(to top, rgba(244,239,227,0.9), rgba(244,239,227,0.35)); }
+    .lbl-card { position: absolute; left: 0; bottom: 30px; transform: translateX(-50%); white-space: nowrap; display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 4px 9px 4px; border-radius: 5px; background: rgba(24, 30, 40, 0.72); border: 1px solid rgba(244, 239, 227, 0.32); backdrop-filter: blur(4px); box-shadow: 0 2px 8px rgba(0,0,0,0.28); color: #f4efe3; font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif; }
+    .lbl-name { font-size: 12px; font-weight: 600; letter-spacing: 0.02em; line-height: 1.2; }
+    .lbl-sub { font-size: 10px; font-weight: 400; opacity: 0.72; letter-spacing: 0.03em; line-height: 1.2; }
+    .lbl-minor .lbl-card { background: rgba(24, 30, 40, 0.6); padding: 3px 8px; }
+    .lbl-minor .lbl-name { font-size: 11px; font-weight: 500; }
+    .lbl-street .lbl-card { background: rgba(244, 239, 227, 0.82); color: #2a2f38; border-color: rgba(42, 47, 56, 0.35); padding: 2px 7px; border-radius: 3px; }
+    .lbl-street .lbl-name { font-size: 10px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; }
+    .lbl-street::after { background: #2a2f38; box-shadow: 0 0 0 1.5px rgba(244,239,227,0.8); }
+    .lbl-street .lbl-stem { background: linear-gradient(to top, rgba(42,47,56,0.8), rgba(42,47,56,0.3)); }
     #error { position: fixed; inset: auto 16px 16px 16px; display: none; background: rgba(120, 30, 30, 0.92); color: #fff; padding: 12px 14px; border-radius: 8px; font: 13px/1.4 ui-monospace, Menlo, monospace; white-space: pre-wrap; z-index: 9; }
   </style>
   <script type="importmap">
@@ -48,6 +62,7 @@
       <div><kbd>F</kbd>cinematic flyover</div>
       <div><kbd>T</kbd>time of day · <span class="mode" id="mode-label">Clear day</span></div>
       <div><kbd>V</kbd>street level / aerial</div>
+      <div><kbd>L</kbd>landmark labels · <span class="mode" id="labels-state">off</span></div>
       <div><kbd>G</kbd>regenerate crowds &amp; details</div>
     </div>
   </div>
@@ -56,7 +71,9 @@
     <button id="btn-fly" title="Flyover (F)">▶ Flyover</button>
     <button id="btn-time" title="Time of day (T)">☀ Day</button>
     <button id="btn-view" title="Street / aerial (V)">⇅ View</button>
+    <button id="btn-labels" title="Landmark labels (L)">◌ Labels</button>
   </div>
+  <div id="labels"></div>
   <div id="status"></div>
   <div id="error"></div>
   <script type="module" src="./src/main.js"></script>

@@ -5,6 +5,7 @@ import { createTextures, createMaterials } from './materials.js';
 import { Sky } from './sky.js';
 import { World } from './world.js';
 import { CHURCH_CENTER, MONUMENT } from './layout.js';
+import { Labels, buildLabelItems } from './labels.js';
 
 const $ = (id) => document.getElementById(id);
 const showError = (err) => {
@@ -57,6 +58,7 @@ class App {
     this.materials = createMaterials(this.textures, this.envMap);
     this.sky = new Sky(this.scene, this.renderer, this.materials);
 
+    this.labels = new Labels($('labels'), this.camera);
     this.flyover = null;
     this.tween = null;
     this.viewToggle = 'aerial';
@@ -108,8 +110,10 @@ class App {
       else if (k === 'f') this.toggleFlyover();
       else if (k === 't') this.toggleTime();
       else if (k === 'v') this.toggleView();
+      else if (k === 'l') this.toggleLabels();
       else if (k === 'g') this.regenerate();
     });
+    $('btn-labels').addEventListener('click', () => this.toggleLabels());
     $('btn-recenter').addEventListener('click', () => this.recenter());
     $('btn-fly').addEventListener('click', () => this.toggleFlyover());
     $('btn-time').addEventListener('click', () => this.toggleTime());
@@ -127,6 +131,7 @@ class App {
     this.world = world;
     world.setNight(this.sky.blend);
     world.warmShaders(this.renderer, this.camera);
+    this.labels.setItems(buildLabelItems(world));
     loading.classList.add('hidden');
     console.info('[world] stats', world.stats);
   }
@@ -144,6 +149,11 @@ class App {
   toggleView() {
     if (this.viewToggle === 'aerial') { this.flyTo(VIEWS.street, 2.2); this.viewToggle = 'street'; }
     else { this.flyTo(VIEWS.aerial, 2.2); this.viewToggle = 'aerial'; }
+  }
+  toggleLabels() {
+    const on = this.labels.toggle();
+    $('btn-labels').classList.toggle('active', on);
+    $('labels-state').textContent = on ? 'on' : 'off';
   }
   toggleTime() {
     this.sky.toggle();
@@ -263,6 +273,7 @@ class App {
       this.sky.update(dt, elapsed);
       if (this.world && this.world.built) { this.world.setNight(this.sky.blend); this.world.update(dt, elapsed, this.camera); }
       this.renderer.render(this.scene, this.camera);
+      this.labels.update();
       this.fpsAcc += dt;
       this.fpsFrames++;
       if (this.fpsAcc >= 0.5) {
