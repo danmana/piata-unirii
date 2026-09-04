@@ -1,1 +1,11 @@
-[]
+[
+  {
+    "name": "gpt-5.6-sol-xhigh-01",
+    "model": "gpt-5.6-sol",
+    "effort": "xhigh",
+    "provider": "OpenAI",
+    "agent": "Codex",
+    "startedAt": "2026-09-04T08:03:13Z",
+    "durationSeconds": 707
+  }
+]

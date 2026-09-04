@@ -1,0 +1,489 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+  <title>Piața Unirii — Living Voxel Cluj</title>
+  <style>
+    :root {
+      --ink:#18201e;
+      --cream:#f3ead6;
+      --paper:rgba(248,241,225,.91);
+      --line:rgba(46,54,49,.18);
+      --rust:#9b4830;
+      --gold:#c6914e;
+    }
+    *{box-sizing:border-box}
+    html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#9ebbd0;color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+    canvas{position:fixed;inset:0;width:100%;height:100%;display:block;cursor:grab;touch-action:none}
+    canvas.dragging{cursor:grabbing}
+    .grain{position:fixed;inset:0;pointer-events:none;opacity:.055;mix-blend-mode:multiply;background-image:repeating-conic-gradient(rgba(43,48,42,.7) 0 .4deg,transparent .45deg 1.2deg);background-size:5px 5px}
+    .topbar{position:fixed;z-index:3;left:22px;right:22px;top:20px;display:flex;align-items:flex-start;justify-content:space-between;pointer-events:none}
+    .brand{display:flex;gap:13px;align-items:center;color:#fff;text-shadow:0 2px 18px rgba(25,35,34,.35)}
+    .seal{width:40px;height:40px;display:grid;place-items:center;border:1px solid rgba(255,255,255,.65);border-radius:50%;font:600 18px/1 Georgia,serif;backdrop-filter:blur(9px);background:rgba(24,32,30,.16)}
+    .brand h1{margin:0;font:500 18px/1.08 Georgia,"Times New Roman",serif;letter-spacing:.12em;text-transform:uppercase}
+    .brand p{margin:5px 0 0;font-size:9px;letter-spacing:.24em;text-transform:uppercase;opacity:.76}
+    .status{display:flex;align-items:center;gap:8px;padding:9px 11px;border:1px solid rgba(255,255,255,.35);background:rgba(25,32,29,.22);color:#fff;border-radius:999px;backdrop-filter:blur(12px);font-size:10px;letter-spacing:.13em;text-transform:uppercase;box-shadow:0 10px 25px rgba(31,31,26,.1)}
+    .status-dot{width:7px;height:7px;border-radius:50%;background:#cfe5bc;box-shadow:0 0 0 3px rgba(207,229,188,.16)}
+    .panel{position:fixed;z-index:3;left:22px;bottom:22px;width:min(355px,calc(100vw - 44px));background:var(--paper);border:1px solid rgba(255,255,255,.48);border-radius:4px;box-shadow:0 18px 55px rgba(38,38,29,.21);backdrop-filter:blur(17px);overflow:hidden}
+    .panel-head{padding:15px 16px 13px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line)}
+    .eyebrow{font-size:8px;letter-spacing:.25em;text-transform:uppercase;color:#6e6b61}
+    .panel-title{margin-top:4px;font:600 13px/1.2 Georgia,serif;letter-spacing:.03em}
+    .mode{display:flex;gap:5px;align-items:center;color:#76573d;font-size:9px;letter-spacing:.12em;text-transform:uppercase}
+    .sun{width:13px;height:13px;border:1px solid currentColor;border-radius:50%;position:relative}
+    .controls{display:grid;grid-template-columns:repeat(4,1fr);padding:9px 9px 10px;gap:6px}
+    button{appearance:none;border:1px solid var(--line);border-radius:3px;background:rgba(255,255,255,.45);padding:9px 4px 8px;color:var(--ink);cursor:pointer;transition:background .2s,transform .2s,border-color .2s;font:600 9px/1 system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase}
+    button:hover{background:#fff;border-color:rgba(80,67,50,.27);transform:translateY(-1px)}
+    button.active{background:#28322e;color:#f9f2df;border-color:#28322e}
+    button kbd{display:block;margin-bottom:5px;font:500 11px/1 Georgia,serif;color:var(--rust)}
+    button.active kbd{color:#e5c68f}
+    .hint{position:fixed;z-index:3;right:22px;bottom:22px;display:grid;gap:6px;justify-items:end;color:white;text-shadow:0 1px 10px rgba(0,0,0,.4);pointer-events:none}
+    .hint span{padding:6px 9px;border-radius:999px;background:rgba(28,34,32,.23);backdrop-filter:blur(8px);font-size:9px;letter-spacing:.08em}
+    .loader{position:fixed;z-index:10;inset:0;display:grid;place-items:center;background:#e9dfc9;transition:opacity .8s ease,visibility .8s}
+    .loader.done{display:none}
+    .loadmark{text-align:center}
+    .loadmark .tower{height:78px;width:32px;margin:0 auto 18px;position:relative;border:1px solid #9c7151;border-top:0}
+    .loadmark .tower:before{content:"";position:absolute;left:3px;right:3px;top:-48px;height:48px;background:#9c7151;clip-path:polygon(50% 0,100% 100%,0 100%)}
+    .loadmark .tower:after{content:"";position:absolute;width:7px;height:7px;border-radius:50%;border:1px solid #9c7151;left:11px;top:18px}
+    .loadmark strong{display:block;font:500 14px Georgia,serif;letter-spacing:.16em;text-transform:uppercase}
+    .loadmark small{display:block;margin-top:7px;color:#796f60;font-size:8px;letter-spacing:.22em;text-transform:uppercase}
+    .error{display:none;position:fixed;inset:0;z-index:20;place-items:center;background:#eee4d1;padding:30px;text-align:center}
+    .error.show{display:grid}.error h2{font:500 26px Georgia,serif}.error p{max-width:460px;line-height:1.6}
+    @media(max-width:720px){.topbar{left:14px;right:14px;top:13px}.status{display:none}.panel{left:12px;bottom:12px;width:calc(100vw - 24px)}.hint{display:none}.brand h1{font-size:15px}.seal{width:34px;height:34px}.controls{gap:4px}}
+  </style>
+</head>
+<body>
+  <canvas id="scene" aria-label="Interactive voxel reconstruction of Piața Unirii in Cluj-Napoca"></canvas>
+  <div class="grain"></div>
+  <header class="topbar">
+    <div class="brand"><div class="seal">M</div><div><h1>Piața Unirii</h1><p>Cluj-Napoca · Transylvania</p></div></div>
+    <div class="status"><i class="status-dot"></i><span id="fps">Living city · 60 fps</span></div>
+  </header>
+  <section class="panel" aria-label="Scene controls">
+    <div class="panel-head">
+      <div><div class="eyebrow">Interactive architectural miniature</div><div class="panel-title">St. Michael’s Church &amp; the old city</div></div>
+      <div class="mode"><i class="sun"></i><span id="modeLabel">Clear day</span></div>
+    </div>
+    <div class="controls">
+      <button data-action="reset"><kbd>R</kbd>Re-centre</button>
+      <button data-action="fly"><kbd>F</kbd>Flyover</button>
+      <button data-action="time"><kbd>T</kbd>Sunset</button>
+      <button data-action="view"><kbd>V</kbd>Street view</button>
+    </div>
+  </section>
+  <div class="hint"><span>Left drag · orbit</span><span>Right drag · pan</span><span>Scroll · zoom</span></div>
+  <div class="loader" id="loader"><div class="loadmark"><div class="tower"></div><strong>Building Piața Unirii</strong><small>Assembling the living city</small></div></div>
+  <div class="error" id="error"><div><h2>This miniature needs WebGL 2</h2><p>Please open it in a current desktop browser with hardware acceleration enabled.</p></div></div>
+
+  <script>
+  (() => {
+    'use strict';
+    const canvas = document.getElementById('scene');
+    const gl = canvas.getContext('webgl2', {antialias:true, alpha:false, powerPreference:'high-performance'});
+    if (!gl) { document.getElementById('loader').classList.add('done'); document.getElementById('error').classList.add('show'); return; }
+
+    const PI = Math.PI, TAU = PI * 2;
+    const clamp = (v,a,b) => Math.max(a,Math.min(b,v));
+    const mix = (a,b,t) => a+(b-a)*t;
+    const hex = (s,a=1) => { s=s.replace('#',''); return [parseInt(s.slice(0,2),16)/255,parseInt(s.slice(2,4),16)/255,parseInt(s.slice(4,6),16)/255,a]; };
+    const shade = (c,n) => [clamp(c[0]+n,0,1),clamp(c[1]+n,0,1),clamp(c[2]+n,0,1),c[3]];
+    let seed = 0x434c554a;
+    const rnd = () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t=Math.imul(seed^seed>>>15,1|seed); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; };
+    const pick = a => a[Math.floor(rnd()*a.length)];
+
+    const vs = `#version 300 es
+      precision highp float;
+      layout(location=0) in vec3 aPosition;
+      layout(location=1) in vec3 aNormal;
+      layout(location=2) in vec3 iPosition;
+      layout(location=3) in vec3 iScale;
+      layout(location=4) in vec4 iColor;
+      layout(location=5) in float iRotation;
+      layout(location=6) in float iMaterial;
+      layout(location=7) in float iFlags;
+      uniform mat4 uViewProjection;
+      out vec3 vWorld;
+      out vec3 vNormal;
+      out vec3 vLocal;
+      out vec4 vColor;
+      flat out int vMaterial;
+      flat out int vFlags;
+      void main(){
+        float c=cos(iRotation), s=sin(iRotation);
+        mat3 r=mat3(c,0.0,-s, 0.0,1.0,0.0, s,0.0,c);
+        vec3 local=aPosition*iScale;
+        vec3 world=r*local+iPosition;
+        vWorld=world; vLocal=local; vNormal=normalize(r*aNormal); vColor=iColor;
+        vMaterial=int(iMaterial+.5); vFlags=int(iFlags+.5);
+        gl_Position=uViewProjection*vec4(world,1.0);
+      }`;
+    const fs = `#version 300 es
+      precision highp float;
+      in vec3 vWorld;
+      in vec3 vNormal;
+      in vec3 vLocal;
+      in vec4 vColor;
+      flat in int vMaterial;
+      flat in int vFlags;
+      uniform sampler2D uAtlas;
+      uniform vec3 uCamera;
+      uniform vec3 uSunDir;
+      uniform vec3 uSunColor;
+      uniform vec3 uSkyColor;
+      uniform float uSunset;
+      uniform float uTime;
+      out vec4 outColor;
+      void main(){
+        vec3 n=normalize(vNormal);
+        vec2 baseUV = abs(n.y)>.55 ? vWorld.xz*.085 : (abs(n.x)>.55 ? vWorld.zy*.085 : vWorld.xy*.085);
+        vec2 cellUV=fract(baseUV);
+        float tile=float(vMaterial%8);
+        vec3 tex=texture(uAtlas,vec2((tile+cellUV.x)/8.0,cellUV.y)).rgb;
+        float diffuse=max(dot(n,normalize(uSunDir)),0.0);
+        float hemi=.48+.24*n.y;
+        float creases=1.0-.09*(1.0-smoothstep(.35,.5,max(max(abs(vLocal.x),abs(vLocal.y)),abs(vLocal.z))));
+        vec3 light=uSunColor*(hemi+diffuse*.54);
+        vec3 col=vColor.rgb*tex*light*creases;
+        if(vMaterial==6){ col=mix(col,uSkyColor,.38); col+=pow(1.0-max(dot(normalize(uCamera-vWorld),n),0.0),3.0)*.22; }
+        if(vMaterial==7){ float shimmer=.92+.08*sin(vWorld.x*1.4+vWorld.z*.9+uTime*2.0); col=mix(col,uSkyColor,.32)*shimmer; }
+        if(vMaterial==8){ col=vColor.rgb; }
+        if(vMaterial==9){ col=mix(col,vec3(1.0,.58,.22),uSunset*.72); }
+        float dist=distance(vWorld,uCamera);
+        float fog=smoothstep(330.0,720.0,dist);
+        col=mix(col,uSkyColor,fog*.72);
+        outColor=vec4(col,vColor.a);
+      }`;
+
+    function shader(type, source){ const s=gl.createShader(type); gl.shaderSource(s,source); gl.compileShader(s); if(!gl.getShaderParameter(s,gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s)); return s; }
+    const program=gl.createProgram(); gl.attachShader(program,shader(gl.VERTEX_SHADER,vs)); gl.attachShader(program,shader(gl.FRAGMENT_SHADER,fs)); gl.linkProgram(program);
+    if(!gl.getProgramParameter(program,gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(program));
+    const uni={vp:gl.getUniformLocation(program,'uViewProjection'),camera:gl.getUniformLocation(program,'uCamera'),sunDir:gl.getUniformLocation(program,'uSunDir'),sunColor:gl.getUniformLocation(program,'uSunColor'),sky:gl.getUniformLocation(program,'uSkyColor'),sunset:gl.getUniformLocation(program,'uSunset'),time:gl.getUniformLocation(program,'uTime'),atlas:gl.getUniformLocation(program,'uAtlas')};
+
+    function makeAtlas(){
+      const c=document.createElement('canvas'); c.width=512;c.height=64;const x=c.getContext('2d');
+      const bases=['#ddd2b8','#e4d7ba','#b65c39','#45534b','#55734d','#c7beb0','#8ca9ad','#789da5'];
+      for(let t=0;t<8;t++){ x.fillStyle=bases[t];x.fillRect(t*64,0,64,64); const data=x.getImageData(t*64,0,64,64); for(let i=0;i<data.data.length;i+=4){ const px=(i/4)%64, py=Math.floor(i/4/64); let grain=((Math.sin(px*12.9898+py*78.233+t*31.1)*43758.5453)%1)*8; if(t===2&&py%13<2)grain-=13;if(t===5&&(py%18<1||px%27<1))grain-=6;if(t===3)grain+=Math.sin(px*.6+py)*5; for(let k=0;k<3;k++)data.data[i+k]=clamp(data.data[i+k]+grain,0,255); } x.putImageData(data,t*64,0); }
+      const tex=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,tex);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,c.width,c.height,0,gl.RGBA,gl.UNSIGNED_BYTE,c);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR_MIPMAP_LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.REPEAT);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.REPEAT);gl.generateMipmap(gl.TEXTURE_2D);return tex;
+    }
+    const atlas=makeAtlas();
+
+    const positions=[], normals=[];
+    function face(a,b,c,d,n){ for(const p of [a,b,c,a,c,d]){positions.push(...p);normals.push(...n);} }
+    face([-.5,-.5,.5],[.5,-.5,.5],[.5,.5,.5],[-.5,.5,.5],[0,0,1]);
+    face([.5,-.5,-.5],[-.5,-.5,-.5],[-.5,.5,-.5],[.5,.5,-.5],[0,0,-1]);
+    face([.5,-.5,.5],[.5,-.5,-.5],[.5,.5,-.5],[.5,.5,.5],[1,0,0]);
+    face([-.5,-.5,-.5],[-.5,-.5,.5],[-.5,.5,.5],[-.5,.5,-.5],[-1,0,0]);
+    face([-.5,.5,.5],[.5,.5,.5],[.5,.5,-.5],[-.5,.5,-.5],[0,1,0]);
+    face([-.5,-.5,-.5],[.5,-.5,-.5],[.5,-.5,.5],[-.5,-.5,.5],[0,-1,0]);
+    const cubeGeom={positions:new Float32Array(positions),normals:new Float32Array(normals),count:positions.length/3};
+    function geomFromTriangles(tris){ const p=[],n=[];for(const tri of tris){const a=tri[0],b=tri[1],c=tri[2];const ux=b[0]-a[0],uy=b[1]-a[1],uz=b[2]-a[2],vx=c[0]-a[0],vy=c[1]-a[1],vz=c[2]-a[2];let nx=uy*vz-uz*vy,ny=uz*vx-ux*vz,nz=ux*vy-uy*vx;const l=Math.hypot(nx,ny,nz)||1;nx/=l;ny/=l;nz/=l;p.push(...a,...b,...c);n.push(nx,ny,nz,nx,ny,nz,nx,ny,nz);}return {positions:new Float32Array(p),normals:new Float32Array(n),count:p.length/3};}
+    const roofGeom=geomFromTriangles([
+      [[-.5,-.5,-.5],[.5,-.5,-.5],[.5,-.5,.5]],[[-.5,-.5,-.5],[.5,-.5,.5],[-.5,-.5,.5]],
+      [[-.5,-.5,.5],[.5,-.5,.5],[.5,.5,0]],[[-.5,-.5,.5],[.5,.5,0],[-.5,.5,0]],
+      [[.5,-.5,-.5],[-.5,-.5,-.5],[-.5,.5,0]],[[.5,-.5,-.5],[-.5,.5,0],[.5,.5,0]],
+      [[-.5,-.5,-.5],[-.5,-.5,.5],[-.5,.5,0]],[[.5,-.5,.5],[.5,-.5,-.5],[.5,.5,0]]
+    ]);
+    const pyramidGeom=geomFromTriangles([
+      [[-.5,-.5,-.5],[.5,-.5,-.5],[.5,-.5,.5]],[[-.5,-.5,-.5],[.5,-.5,.5],[-.5,-.5,.5]],
+      [[-.5,-.5,.5],[.5,-.5,.5],[0,.5,0]],[[.5,-.5,.5],[.5,-.5,-.5],[0,.5,0]],
+      [[.5,-.5,-.5],[-.5,-.5,-.5],[0,.5,0]],[[-.5,-.5,-.5],[-.5,-.5,.5],[0,.5,0]]
+    ]);
+    const geoms={cube:cubeGeom,roof:roofGeom,pyramid:pyramidGeom};
+    const pools=new Map();
+    const materialId={stone:0,plaster:1,roof:2,bronze:3,vegetation:4,paving:5,glass:6,water:7,shadow:8,light:9};
+    function add(mesh,material,x,y,z,sx,sy,sz,color,rotation=0,tier=1,flags=0){const key=`${mesh}|${material}|${tier}`;if(!pools.has(key))pools.set(key,{mesh,material,tier,data:[]});pools.get(key).data.push(x,y,z,sx,sy,sz,...color,rotation,materialId[material],flags);}
+    const box=(material,x,y,z,sx,sy,sz,color,rotation=0,tier=1,flags=0)=>add('cube',material,x,y,z,sx,sy,sz,color,rotation,tier,flags);
+    const roof=(x,y,z,sx,sy,sz,color,rotation=0,tier=1)=>add('roof','roof',x,y,z,sx,sy,sz,color,rotation,tier);
+    const pyramid=(material,x,y,z,sx,sy,sz,color,rotation=0,tier=1)=>add('pyramid',material,x,y,z,sx,sy,sz,color,rotation,tier);
+
+    const C={
+      limestone:hex('#d8c9ab'), limestone2:hex('#eadfc8'), recess:hex('#344344'), ivory:hex('#e7ddc8'), cream:hex('#dccba9'),
+      yellow:hex('#d9bd7b'), ochre:hex('#c59c65'), pink:hex('#cf9e92'), green:hex('#a9b49b'), grey:hex('#b2b2aa'), white:hex('#e9e4d9'),
+      roof:hex('#a94d32'), roof2:hex('#c2673e'), darkRoof:hex('#4f4b49'), bronze:hex('#263c37'), patina:hex('#3c5b50'),
+      grass:hex('#73855c'), leaf:hex('#58754e'), leaf2:hex('#71885c'), trunk:hex('#6b513b'), road:hex('#77736e'), paving:hex('#c7beb0'),
+      paving2:hex('#b9b0a2'), glass:hex('#738f96',.68), water:hex('#6f99a0',.74), shadow:hex('#31382f',.13), lamp:hex('#ffe2a0',.95)
+    };
+
+    // Continuous terrain, roads and the square's restrained stone palette.
+    box('paving',0,-3,0,1000,6,1000,hex('#7f8b72'),0,2);
+    box('paving',0,.0,0,214,.8,154,C.paving,0,1);
+    box('paving',0,.43,0,202,.08,142,shade(C.paving,.025),0,1);
+    box('paving',0,-.1,-85,620,.7,15,C.road,0,2); box('paving',0,-.1,85,620,.7,15,C.road,0,2);
+    box('paving',-115,-.1,0,15,.7,500,C.road,0,2); box('paving',115,-.1,0,15,.7,500,C.road,0,2);
+    box('paving',0,-.05,51,620,.6,12,shade(C.road,.05),0,2); // Iuliu Maniu / westward axis
+    box('paving',68,-.05,110,12,.6,240,shade(C.road,.035),-.22,2); box('paving',-82,-.05,112,12,.6,240,shade(C.road,.025),.34,2);
+    box('paving',85,-.05,-120,12,.6,260,shade(C.road,.02),-.2,2); box('paving',-78,-.05,-122,12,.6,260,shade(C.road,.03),.25,2);
+    for(const [x,z,sx,sz] of [[0,-77,214,1.1],[0,77,214,1.1],[-107,0,1.1,154],[107,0,1.1,154]]) box('stone',x,.65,z,sx,.6,sz,shade(C.limestone,-.09),0,1);
+    for(let z=-66;z<=66;z+=11) box('paving',0,.47,z,202,.035,.32,shade(C.paving,-.065),0,1);
+    for(let x=-96;x<=96;x+=12) box('paving',x,.49,0,.3,.035,140,shade(C.paving,-.04),0,1);
+
+    // Soft contact shadows anchor the main masses without per-voxel shadow draw calls.
+    box('shadow',-4,.51,-9,108,.05,46,C.shadow,0,0); box('shadow',0,.51,-92,210,.05,8,C.shadow,0,1); box('shadow',0,.51,92,210,.05,8,C.shadow,0,1);
+
+    function gothicWindow(x,y,z,face='south',scale=1){
+      const along=face==='south'||face==='north'; const sx=along?3.7*scale:.28, sz=along?.28:3.7*scale;
+      box('glass',x,y,z,sx,10*scale,sz,C.recess,0,0); box('stone',x,y+5.5*scale,z,sx*.86,1.1*scale,sz*.9,C.limestone2,0,0);
+      if(along){ box('stone',x,y,z+(face==='south'?.18:-.18),.28,9.5*scale,.22,C.limestone2,0,0); box('stone',x,y-1.5*scale,z+(face==='south'?.19:-.19),3.4*scale,.26,.2,C.limestone2,0,0); }
+      else { box('stone',x+(face==='east'?.18:-.18),y,z,.22,9.5*scale,.28,C.limestone2,0,0); }
+    }
+
+    function buildChurch(){
+      // Elongated east-west Gothic nave, lower aisles and polygonal sanctuary.
+      box('stone',-2,16,-8,86,31,29,C.limestone,0,0);
+      box('stone',0,10,-25,78,18,7,shade(C.limestone,-.035),0,0); box('stone',0,10,9,78,18,7,shade(C.limestone,.018),0,0);
+      roof(-2,38,-8,92,17,37,C.roof2,0,0); roof(0,22,-25,84,8,11,C.roof,0,0); roof(0,22,9,84,8,11,C.roof,0,0);
+      // Apse facets at the east end.
+      box('stone',43,15,-8,12,29,24,C.limestone2,0,0);
+      box('stone',49,15,-16,10,29,10,C.limestone2,-.42,0); box('stone',49,15,0,10,29,10,C.limestone2,.42,0);
+      pyramid('roof',47,36,-8,24,17,30,C.roof2,PI/2,0);
+      // Monumental west facade and its single, unmistakable tower.
+      box('stone',-44,18,-8,8,35,32,C.limestone2,0,0);
+      box('stone',-44,18,-8,19,35,18,C.limestone,0,0);
+      box('stone',-45,18,-8,19,35,18,C.limestone,0,0);
+      box('glass',-54.55,20,-8,.3,13,5.2,C.recess,0,0);
+      box('stone',-47,18,-8,17,35,17,C.limestone,0,0);
+      box('stone',-47,39,-8,15,12,15,shade(C.limestone,-.02),0,0);
+      box('stone',-47,50,-8,13,11,13,C.limestone2,0,0);
+      box('stone',-47,61,-8,11,12,11,shade(C.limestone,-.035),0,0);
+      pyramid('stone',-47,76,-8,13,25,13,shade(C.limestone,-.08),0,0);
+      box('bronze',-47,89,-8,.7,5,.7,C.bronze,0,0); box('bronze',-47,90,-8,4,.45,.45,C.bronze,0,0);
+      // Clock faces and belfry openings on visible sides.
+      for(const [x,z,sx,sz] of [[-47,6.6,7,.25],[-60.1,-8,.25,7]]){ box('stone',x,51,z,sx,7,sz,C.white,0,0); box('bronze',x,51,z+(sz<1?.17:0),sx<1?.18:.35,.5,sz<1?2.4:.3,C.bronze,0,0); box('bronze',x,51,z+(sz<1?.18:0),sx<1?2.2:.28,.38,sz<1?.28:2.2,C.bronze,0,0); }
+      for(const z of [-12,-4]){ box('glass',-47,61,z,3.2,7,.25,C.recess,0,0); box('stone',-47,65,z,3.5,.8,.36,C.limestone2,0,0); }
+      for(const [x,z] of [[-53,-14],[-41,-14],[-53,-2],[-41,-2]]){ box('stone',x,65,z,1.5,7,1.5,C.limestone2,0,0); pyramid('stone',x,71,z,2.2,7,2.2,C.limestone2,0,0); }
+      // Repeating stepped buttresses and deeply inset south/north windows.
+      for(let x=-36;x<=37;x+=12){
+        for(const z of [-28.5,12.5]){ box('stone',x,7,z,3.2,13,5,shade(C.limestone,-.02),0,0); box('stone',x,16,z+(z<0?1:-1),2.3,8,3.6,C.limestone2,0,0); pyramid('stone',x,22,z+(z<0?1:-1),3,5,4,C.limestone2,0,0); }
+        gothicWindow(x,13,-24.52,'north',.86); gothicWindow(x,13,8.52,'south',.86);
+      }
+      // Clerestory and stone banding.
+      for(let x=-34;x<=34;x+=11){ gothicWindow(x,24,6.56,'south',.68); }
+      box('stone',-2,30,7.1,86,.7,.8,shade(C.limestone,-.08),0,0); box('stone',-2,30,-23.1,86,.7,.8,shade(C.limestone,-.08),0,0);
+      // Door portals on the south facade.
+      box('glass',-15,7,9.56,5,12,.28,C.recess,0,0); box('stone',-15,13,9.7,6,1.2,.8,C.limestone2,0,0);
+    }
+    buildChurch();
+
+    // Quiet lawns, paths and churchyard details.
+    for(const [x,z,sx,sz] of [[22,-39,42,12],[-19,-39,30,12],[38,12,20,12],[-30,13,18,10]]) box('vegetation',x,.62,z,sx,.32,sz,C.grass,0,1);
+    box('paving',-2,.8,-32,104,.22,3,shade(C.paving,.08),0,1); box('paving',38,.8,-8,3,.22,44,shade(C.paving,.08),0,1);
+
+    function buildMonument(){
+      const x=-5,z=27;
+      box('stone',x,1.5,z,24,2.2,12,shade(C.limestone,-.12),0,0); box('stone',x,3.3,z,19,2,9,C.limestone2,0,0); box('stone',x,5.1,z,14,2,7,C.limestone,0,0);
+      // Horse body, neck, head, legs and tail in fine bronze voxel clusters.
+      box('bronze',x,9.0,z,10,4,3.2,C.bronze,0,0); box('bronze',x+4,11,z-.1,3,5,2.5,C.bronze,-.35,0); box('bronze',x+5.6,13,z-.1,3,2.2,2.5,C.patina,0,0);
+      for(const [dx,dz,r] of [[-3,-1,-.12],[-2.1,1,.12],[2.7,-1,.08],[3.5,1,-.08]]){ box('bronze',x+dx,6.7,z+dz,1,5.5,1,C.bronze,r,0); box('bronze',x+dx+.3,4.2,z+dz,.8,.5,1.6,C.patina,0,0); }
+      for(let i=0;i<4;i++) box('bronze',x-5.2-i*.65,9.2-i*.34,z,1.2,1.1,1.1,C.bronze,-.4,0);
+      // King Matthias, crown and raised ceremonial sword.
+      box('bronze',x+.5,14,z,2.3,5.2,2.1,C.bronze,0,0); box('bronze',x+.5,17.2,z,2.1,2.1,2,C.patina,0,0); pyramid('bronze',x+.5,19,z,2.3,2.2,2.3,C.bronze,0,0);
+      box('bronze',x+1.8,16.5,z,.55,6,.55,C.bronze,-.3,0); box('bronze',x+3.2,19,z,.35,7,.35,C.patina,-.2,0);
+      // Four additional figures massed around the pedestal, with standards and weapons.
+      for(const [dx,dz,turn] of [[-8,-4,.12],[-8,4,-.1],[7,-4,-.1],[7,4,.15]]){ box('bronze',x+dx,6.6,z+dz,2.1,4.8,2,C.bronze,turn,0); box('bronze',x+dx,9.5,z+dz,1.8,1.8,1.8,C.patina,0,0); box('bronze',x+dx+(dx<0?-1:1),8,z+dz,.45,7,.45,C.bronze,turn,0); }
+      box('stone',x,3.6,z+4.56,9,.7,.3,shade(C.limestone,-.22),0,0);
+    }
+    buildMonument();
+
+    function archaeology(){
+      const x=24,z=31; box('stone',x,.72,z,18,.3,10,shade(C.limestone,-.16),0,1); box('glass',x,1.03,z,15,.28,7,C.glass,0,0);
+      for(let i=-5;i<=5;i+=2.5){ box('light',x+i,.84,z,1.2,.18,5.4,hex('#c98c4d'),0,0); }
+      box('stone',x-2,.95,z,1,1,5,shade(C.limestone,-.22),0,0); box('stone',x+3,.95,z-1,6,1,1.2,shade(C.limestone,-.19),0,0);
+      for(const [dx,dz,sx,sz] of [[0,-4.7,19,1],[0,4.7,19,1],[-8.6,0,1,8],[8.6,0,1,8]]) box('stone',x+dx,1.2,z+dz,sx,.7,sz,shade(C.limestone,-.06),0,1);
+    }
+    archaeology();
+
+    function facadeBuilding(o){
+      const {x,z,length,depth,height,face,color,roofColor=C.roof,floors=3,ornate=0,tier=1}=o;
+      const ns=face==='north'||face==='south', sx=ns?length:depth, sz=ns?depth:length, rot=ns?0:PI/2;
+      box('plaster',x,height/2+.5,z,sx,height,sz,color,0,tier); roof(x,height+5,z,ns?length+1:sz+1,10,ns?depth+2:sx+2,roofColor,rot,tier);
+      box('stone',x,1.5,z,sx+1,2.2,sz+1,shade(color,-.12),0,tier);
+      const sign=face==='south'?1:face==='north'?-1:face==='east'?1:-1;
+      const frontX=(face==='east'||face==='west')?x+sign*(depth/2+.05):x;
+      const frontZ=ns?z+sign*(depth/2+.05):z;
+      const count=Math.max(2,Math.floor(length/5.4)), floorH=(height-3)/floors;
+      for(let f=0;f<floors;f++){
+        const wy=4.3+f*floorH;
+        for(let i=0;i<count;i++){
+          const d=-length/2+(i+.5)*length/count;
+          const wx=ns?x+d:frontX, wz=ns?frontZ:z+d;
+          const wsx=ns?2.1:.16, wsz=ns?.16:2.1;
+          box('glass',wx,wy,wz,wsx,Math.min(3.1,floorH*.55),wsz,shade(C.glass,-.16+f*.025),0,tier);
+          if(tier<2){
+            box('stone',wx,wy+1.8,wz,ns?2.7:.24,.32,ns?.25:2.7,shade(color,.12),0,tier);
+            if(f===0&&i%3===1) box('plaster',wx,wy-2,wz,ns?3.4:.22,.38,ns?.22:3.4,shade(color,-.18),0,tier);
+          }
+        }
+        box('stone',x,2.4+(f+1)*floorH,z+(ns?sign*(depth/2+.12):0),ns?length+.5:.28,.34,ns?.28:length+.5,shade(color,-.1),0,tier);
+      }
+      // Arched-looking central entrance, cornice, balconies and rooftop dormers.
+      box('glass',frontX,3.4,frontZ,ns?3.5:.22,5.5,ns?.22:3.5,shade(C.recess,.02),0,tier);
+      box('stone',x,height-.5,z+(ns?sign*(depth/2+.17):0),ns?length+1:.36,.75,ns?.36:length+1,shade(color,.1),0,tier);
+      if(ornate){
+        const by=height*.58; box('stone',frontX,by-1.3,frontZ+(ns?sign*.45:0),ns?Math.min(14,length*.38):1.2,.55,ns?1.2:Math.min(14,length*.38),shade(C.limestone,-.04),0,tier);
+        for(const d of [-4,0,4]){ const bx=ns?x+d:frontX, bz=ns?frontZ:z+d; box('stone',bx,by-2,bz,ns?.35:.7,3.8,ns?.7:.35,C.limestone2,0,tier); }
+        for(let d=-length*.3;d<=length*.3;d+=Math.max(6,length*.3)) pyramid('stone',ns?x+d:x,height+7,ns?z:z+d,2.2,4,2.2,shade(C.limestone,-.08),0,tier);
+      }
+      if(length>25&&tier<2){ for(const d of [-length*.27,length*.27]){ const dx=ns?d:0,dz=ns?0:d; box('plaster',x+dx,height+3,z+dz,4,4,4,shade(color,.04),0,tier); roof(x+dx,height+6,z+dz,5,4,5,roofColor,rot,tier); } }
+    }
+
+    const facades=[
+      // North: Mauksch-Hintz, Kemény, Rucska and accumulated townhouses.
+      [-92,-96,28,17,18,'south',C.ochre,0],[-64,-96,24,17,22,'south',C.green,1],[-37,-96,27,17,20,'south',C.cream,0],[-8,-96,28,17,24,'south',C.pink,1],[22,-96,30,17,19,'south',C.yellow,0],[51,-96,25,17,22,'south',C.grey,1],[79,-96,29,17,20,'south',C.ivory,0],[102,-96,16,17,24,'south',C.green,0],
+      // South: Hotel Continental, Old Town Hall, National Bank and neighbours.
+      [-91,97,39,24,27,'north',C.ochre,2],[-57,97,25,22,20,'north',C.pink,0],[-27,97,33,22,22,'north',C.yellow,1],[8,97,35,22,25,'north',C.ivory,2],[41,97,27,22,23,'north',C.grey,1],[82,97,45,22,21,'north',C.cream,0],
+      // West side: Rhédey, Jósika, Wass and parish buildings.
+      [-126,-63,30,20,19,'east',C.pink,0],[-126,-31,31,20,23,'east',C.cream,1],[-126,1,30,20,20,'east',C.green,0],[-126,34,32,20,24,'east',C.yellow,1],[-126,66,29,20,21,'east',C.grey,0],
+      // East, with Bánffy Palace as the broad Baroque centerpiece.
+      [126,-66,26,20,20,'west',C.pink,0],[126,-34,34,22,22,'west',C.cream,1],[126,3,42,24,27,'west',C.ivory,2],[126,32,17,20,21,'west',C.yellow,0],[126,69,25,20,22,'west',C.green,1]
+    ];
+    for(const f of facades) facadeBuilding({x:f[0],z:f[1],length:f[2],depth:f[3],height:f[4],face:f[5],color:f[6],ornate:f[7]});
+
+    // Bánffy's emphatic Baroque centre: colonnaded rhythm, arched portal, sculptures, courtyard glimpse.
+    box('stone',113,15,3,.5,18,16,shade(C.limestone,-.1),0,0); box('glass',113.2,7,3,.5,11,7,C.recess,0,0);
+    for(let z=-10;z<=16;z+=6.5){ box('stone',113.2,17,z,.8,15,.8,C.limestone2,0,0); box('stone',112.8,10,z,1.6,.7,1.6,shade(C.limestone,-.06),0,0); }
+    for(let z=-12;z<=18;z+=7.5){ box('stone',116,31,z,1.7,2.5,1.7,C.limestone2,0,0); pyramid('stone',116,33,z,2,2,2,C.limestone2,0,0); }
+
+    // Hotel Continental's rounded southwest corner and dark mansard crown.
+    for(const [x,z,s] of [[-111,81,10],[-106,87,8],[-101,92,7]]){box('plaster',x,14,z,s,27,s,C.ochre,PI/4,0);roof(x,30,z,s+2,8,s+2,C.darkRoof,PI/4,0);}
+    box('stone',-111,16,81,.5,19,7,C.limestone2,0,0); box('glass',-111.3,17,81,.25,8,3.6,C.recess,0,0);
+
+    // Mirror Buildings frame Iuliu Maniu Street as a matching urban gateway.
+    function mirrorWing(z,flip){
+      facadeBuilding({x:144,z,length:24,depth:37,height:25,face:flip?'north':'south',color:C.ivory,roofColor:C.darkRoof,ornate:2,tier:0});
+      facadeBuilding({x:126,z:z+(flip?-10:10),length:19,depth:20,height:25,face:'west',color:C.ivory,roofColor:C.darkRoof,ornate:1,tier:0});
+      const cz=flip?59:43; box('plaster',118,13,cz,9,25,9,C.ivory,PI/4,0); pyramid('roof',118,30,cz,11,12,11,C.darkRoof,PI/4,0);
+      for(let y=7;y<22;y+=7) box('glass',112.9,y,cz,.22,3,2.3,C.glass,0,0);
+    }
+    mirrorWing(38,false); mirrorWing(64,true);
+
+    function tree(x,z,s=1,tier=1){
+      box('vegetation',x,3.5*s,z,1.15*s,7*s,1.15*s,C.trunk,0,tier);
+      for(const [dx,dy,dz,r] of [[0,8,0,3.8],[-2.3,7.4,.8,2.9],[2.2,8.2,-.5,3],[.5,10.2,1.2,3],[-.8,9.1,-2.1,2.7]]) box('vegetation',x+dx*s,dy*s,z+dz*s,r*s,r*.8*s,r*s,rnd()>.45?C.leaf:C.leaf2,rnd()*.4,tier);
+      for(const [dx,dz,rot] of [[1,0,.4],[-1,.4,-.45],[.2,-1,.15]]) box('vegetation',x+dx*s,6*s,z+dz*s,.55*s,5*s,.55*s,C.trunk,rot,tier);
+    }
+    for(const [x,z,s] of [[-33,-42,1.05],[-12,-43,.9],[20,-44,1.05],[39,-38,.9],[48,9,1],[-36,16,.92],[-78,-65,1.05],[-53,-65,.95],[-27,-65,1.02],[63,-64,1.08],[87,-62,.95],[-91,64,.95],[-66,64,1.1],[64,66,.96],[87,64,1.06]]) tree(x,z,s,1);
+
+    function bench(x,z,rot=0){ box('stone',x,1.05,z,5,.45,1,C.trunk,rot,1); box('stone',x,2,z+(rot?0:-.42),5,.35,.45,C.trunk,rot,1); for(const d of [-1.8,1.8]) box('bronze',x+(rot?0:d),.65,z+(rot?d:0),.3,1,.3,C.bronze,0,1); }
+    for(const b of [[-51,46,0],[-32,48,0],[43,46,0],[52,-48,0],[-78,15,PI/2],[82,12,PI/2]]) bench(...b);
+    function lamp(x,z){box('bronze',x,3.3,z,.35,6.5,.35,C.bronze,0,1);box('light',x,6.8,z,1.1,1.2,1.1,C.lamp,0,1);pyramid('bronze',x,7.5,z,1.4,1,1.4,C.bronze,0,1);}
+    for(const [x,z] of [[-94,-57],[-63,-57],[-1,-59],[56,-57],[91,-56],[-94,56],[-58,56],[4,58],[57,56],[93,56]]) lamp(x,z);
+
+    // Southern contemporary fountain: flush jets, reflective water tables and seating edges.
+    function fountain(){
+      for(const [x,z,sx,sz] of [[16,58,24,7],[43,59,16,5],[33,68,28,5]]){ box('stone',x,.64,z,sx,.35,sz,shade(C.paving,-.08),0,1); box('water',x,.86,z,sx-1,.18,sz-1,C.water,0,1); }
+      for(let x=7;x<=50;x+=7){ const z=54+(x%14?1:0); box('water',x,2.2,z,.35,3,.35,hex('#a9c9ca',.55),0,1); box('light',x,.92,z,.7,.16,.7,C.lamp,0,1); }
+      box('stone',31,1,72,36,1,1.5,shade(C.limestone,-.08),0,1);
+    }
+    fountain();
+
+    // Café terraces remain tucked against the perimeter, leaving the square legibly open.
+    function cafe(x,z,cols=4,rot=0){ for(let i=0;i<cols;i++){ const dx=rot?0:i*5, dz=rot?i*5:0; const px=x+dx,pz=z+dz; box('stone',px,1.35,pz,2.2,.25,2.2,C.trunk,rot,1); box('bronze',px,.7,pz,.25,1.3,.25,C.bronze,0,1); pyramid('plaster',px,4.3,pz,4.5,1.8,4.5,i%2?C.cream:C.pink,0,1); box('stone',px,2.9,pz,.25,3.2,.25,C.trunk,0,1); } }
+    cafe(-67,-72,5,0);cafe(77,-69,4,0);cafe(96,15,4,PI/2);cafe(-96,21,3,PI/2);
+
+    const clothing=[hex('#924f3f'),hex('#29485c'),hex('#d5b46b'),hex('#697561'),hex('#6d536f'),hex('#d8d0bd')];
+    function person(x,z,s=1,pose=0){ const c=pick(clothing),skin=hex('#c99d7c'); box('plaster',x,1.65*s,z,.72*s,1.7*s,.55*s,c,0,1);box('plaster',x,2.85*s,z,.68*s,.72*s,.66*s,skin,0,1);box('plaster',x-.23*s,.55*s,z,.22*s,1.5*s,.25*s,shade(c,-.15),pose*.2,1);box('plaster',x+.23*s,.55*s,z,.22*s,1.5*s,.25*s,shade(c,-.12),-pose*.2,1);box('plaster',x-.52*s,1.6*s,z,.2*s,1.55*s,.2*s,skin,pose*.45,1);box('plaster',x+.52*s,1.6*s,z,.2*s,1.55*s,.2*s,skin,-pose*.4,1); }
+    for(let i=0;i<62;i++){ let x,z;do{x=-94+rnd()*188;z=-66+rnd()*132;}while((x>-58&&x<55&&z>-47&&z<18)||(Math.hypot(x+5,z-27)<18)||(x>0&&x<56&&z>50)); person(x,z,.82+rnd()*.22,rnd()>.5?1:-1); }
+    // Children at the fountain and tourists facing the monument.
+    for(const [x,z,s] of [[13,52,.62],[28,53,.67],[44,66,.6],[-26,31,.88],[-20,35,.9],[-13,43,.86]]) person(x,z,s,1);
+
+    function bicycle(x,z,rot=0){ for(const dx of [-1.25,1.25]){ box('bronze',x+Math.cos(rot)*dx,.72,z+Math.sin(rot)*dx,.18,1.4,1.4,C.bronze,rot,1); } box('bronze',x,.85,z,2.5,.18,.18,C.bronze,rot,1); box('bronze',x,1.35,z,.18,1.3,.18,C.bronze,rot,1); }
+    bicycle(72,42,.25);bicycle(-72,37,-.18);bicycle(64,-52,.6);bicycle(-88,-51,.1);
+
+    function car(x,z,rot=0,color=C.pink,tier=1){ box('plaster',x,1.2,z,4.6,1.4,2.2,color,rot,tier);box('glass',x-.45*Math.cos(rot),2,z+.45*Math.sin(rot),2.4,1,1.8,shade(C.glass,-.12),rot,tier);for(const d of [-1.45,1.45]){box('bronze',x+d*Math.cos(rot),.65,z-d*Math.sin(rot),.7,.7,2.35,C.darkRoof,rot,tier);} }
+    for(const p of [[-22,-85,0,C.green],[37,85,PI,C.yellow],[115,-42,PI/2,C.grey],[-115,49,PI/2,C.pink],[162,51,0,C.cream],[68,135,PI/2,C.green]]) car(...p);
+    box('plaster',-173,-.0,-84,1,1,1,C.cream,0,2); // deterministic pool stabilizer
+    // A distant bus and delivery vans appear away from the pedestrian core.
+    box('plaster',190,2,-85,11,3.5,3,C.cream,0,2); box('glass',190,3,-86.55,8,1.4,.18,C.glass,0,2); car(-158,51,0,C.grey,2); car(116,126,PI/2,C.cream,2);
+
+    class OccupancyGrid{
+      constructor(cell=8){this.cell=cell;this.used=new Set();}
+      cells(x,z,w,d){const a=[];for(let ix=Math.floor((x-w/2)/this.cell);ix<=Math.floor((x+w/2)/this.cell);ix++)for(let iz=Math.floor((z-d/2)/this.cell);iz<=Math.floor((z+d/2)/this.cell);iz++)a.push(ix+','+iz);return a;}
+      reserve(x,z,w,d){const c=this.cells(x,z,w,d);if(c.some(k=>this.used.has(k)))return false;c.forEach(k=>this.used.add(k));return true;}
+    }
+    const occupancy=new OccupancyGrid(7);
+    occupancy.reserve(0,0,270,215);
+    function blockedStreet(x,z){
+      if(Math.abs(z+85)<10||Math.abs(z-85)<10||Math.abs(x-115)<10||Math.abs(x+115)<10)return true;
+      if(Math.abs(z-51)<9)return true;
+      if(z>95&&Math.abs(x-68+(z-95)*.22)<9)return true;
+      if(z>95&&Math.abs(x+82-(z-95)*.34)<9)return true;
+      if(z<-95&&Math.abs(x-85-(z+95)*.2)<9)return true;
+      if(z<-95&&Math.abs(x+78+(z+95)*.25)<9)return true;
+      return false;
+    }
+    // Several blocks of deterministic, collision-tested old-town fabric.
+    const bgColors=[C.cream,C.yellow,C.pink,C.green,C.grey,C.ivory,C.ochre];
+    for(let z=-190;z<=190;z+=25){
+      for(let x=-250;x<=250;x+=27){
+        const jx=x+(rnd()-.5)*5,jz=z+(rnd()-.5)*4,w=20+rnd()*8,d=17+rnd()*7;
+        if(Math.abs(jx)<142&&Math.abs(jz)<116)continue;if(blockedStreet(jx,jz))continue;if(!occupancy.reserve(jx,jz,w+3,d+3))continue;
+        const h=11+rnd()*13; facadeBuilding({x:jx,z:jz,length:w,depth:d,height:h,face:Math.abs(jz)<Math.abs(jx)?(jx>0?'west':'east'):(jz>0?'north':'south'),color:pick(bgColors),roofColor:rnd()>.15?pick([C.roof,C.roof2]):C.darkRoof,floors:2+(rnd()>.5?1:0),ornate:0,tier:2});
+        if(rnd()>.58) box('stone',jx+(rnd()-.5)*w*.5,h+8,jz+(rnd()-.5)*d*.5,1.4,7,1.4,shade(C.limestone,-.18),0,2);
+      }
+    }
+
+    // Basin hills, hillside housing and sparse modern silhouettes beyond the historic roofs.
+    for(let i=0;i<34;i++){ const a=-.15+i/33*PI*1.3, rad=330+rnd()*100, x=Math.cos(a)*rad, z=-160-Math.sin(a)*rad*.45, h=12+rnd()*28; box('vegetation',x,-2+h*.18,z,38+rnd()*45,h*.42,38+rnd()*40,rnd()>.5?shade(C.leaf,-.08):shade(C.grass,-.05),rnd()*.3,2); }
+    for(let i=0;i<48;i++){ const x=-310+rnd()*620,z=-280-rnd()*130; box('plaster',x,5+rnd()*8,z,7+rnd()*8,10+rnd()*13,7+rnd()*9,pick(bgColors),0,2); roof(x,16+rnd()*8,z,11,5,10,pick([C.roof,C.roof2]),0,2); }
+    for(const [x,z,h] of [[280,-190,44],[-275,-220,53],[214,-305,48],[-190,-330,39]]){box('plaster',x,h/2,z,19,h,16,shade(C.grey,-.08),0,2);for(let y=6;y<h;y+=6)box('glass',x,y,z+8.1,14,2,.2,C.glass,0,2);}
+
+    // Voxel-cloud masses catch the day/sunset colors high above the northern hills.
+    for(const [cx,cy,cz,s] of [[-110,112,-275,1],[95,132,-330,1.25],[250,104,-230,.8]]) for(const q of [[0,0,0,22],[18,2,1,17],[-18,-1,2,15],[6,7,0,17],[-8,5,-2,14]]) box('plaster',cx+q[0]*s,cy+q[1]*s,cz+q[2]*s,q[3]*s,8*s,11*s,hex('#f1eee5',.92),0,2);
+
+    // Pigeons, signs and other small public-space punctuation.
+    for(let i=0;i<15;i++){ const x=-45+rnd()*95,z=37+rnd()*22; box('stone',x,.9,z,.32,.45,.5,shade(C.grey,-.35),rnd()*PI,1); }
+    for(const [x,z] of [[-101,-49],[101,-44],[-101,45],[100,42]]){box('bronze',x,2.4,z,.28,4,.28,C.bronze,0,1);box('plaster',x,4.2,z,2.4,1.5,.22,C.cream,0,1);}
+
+    function createMeshBuffers(g){const pb=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,pb);gl.bufferData(gl.ARRAY_BUFFER,g.positions,gl.STATIC_DRAW);const nb=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,nb);gl.bufferData(gl.ARRAY_BUFFER,g.normals,gl.STATIC_DRAW);return {pb,nb};}
+    const meshBuffers={};for(const k in geoms)meshBuffers[k]=createMeshBuffers(geoms[k]);
+    const gpuPools=[];
+    for(const p of pools.values()){
+      const vao=gl.createVertexArray(), base=meshBuffers[p.mesh], buffer=gl.createBuffer();gl.bindVertexArray(vao);
+      gl.bindBuffer(gl.ARRAY_BUFFER,base.pb);gl.enableVertexAttribArray(0);gl.vertexAttribPointer(0,3,gl.FLOAT,false,0,0);
+      gl.bindBuffer(gl.ARRAY_BUFFER,base.nb);gl.enableVertexAttribArray(1);gl.vertexAttribPointer(1,3,gl.FLOAT,false,0,0);
+      gl.bindBuffer(gl.ARRAY_BUFFER,buffer);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(p.data),gl.STATIC_DRAW);
+      const stride=13*4, attrs=[[2,3,0],[3,3,3],[4,4,6],[5,1,10],[6,1,11],[7,1,12]];
+      for(const [loc,size,off] of attrs){gl.enableVertexAttribArray(loc);gl.vertexAttribPointer(loc,size,gl.FLOAT,false,stride,off*4);gl.vertexAttribDivisor(loc,1);}
+      gpuPools.push({...p,vao,buffer,count:p.data.length/13,transparent:p.material==='glass'||p.material==='water'||p.material==='shadow'});
+    }
+    gpuPools.sort((a,b)=>Number(a.transparent)-Number(b.transparent));
+
+    function perspective(fovy,aspect,near,far){const f=1/Math.tan(fovy/2),nf=1/(near-far);return new Float32Array([f/aspect,0,0,0,0,f,0,0,0,0,(far+near)*nf,-1,0,0,2*far*near*nf,0]);}
+    function lookAt(e,t,u=[0,1,0]){let zx=e[0]-t[0],zy=e[1]-t[1],zz=e[2]-t[2],zl=1/Math.hypot(zx,zy,zz);zx*=zl;zy*=zl;zz*=zl;let xx=u[1]*zz-u[2]*zy,xy=u[2]*zx-u[0]*zz,xz=u[0]*zy-u[1]*zx,xl=1/Math.hypot(xx,xy,xz);xx*=xl;xy*=xl;xz*=xl;const yx=zy*xz-zz*xy,yy=zz*xx-zx*xz,yz=zx*xy-zy*xx;return new Float32Array([xx,yx,zx,0,xy,yy,zy,0,xz,yz,zz,0,-(xx*e[0]+xy*e[1]+xz*e[2]),-(yx*e[0]+yy*e[1]+yz*e[2]),-(zx*e[0]+zy*e[1]+zz*e[2]),1]);}
+    function multiply(a,b){const o=new Float32Array(16);for(let c=0;c<4;c++)for(let r=0;r<4;r++)o[c*4+r]=a[r]*b[c*4]+a[4+r]*b[c*4+1]+a[8+r]*b[c*4+2]+a[12+r]*b[c*4+3];return o;}
+
+    const camera={target:[-2,12,-4],azimuth:.73,elevation:.47,distance:306,street:false,fly:false};
+    let sunsetTarget=0,sunset=0,drag=null,last=performance.now(),elapsed=0,frames=0,fpsTime=0;
+    function cameraPos(){const ce=Math.cos(camera.elevation);return [camera.target[0]+camera.distance*ce*Math.sin(camera.azimuth),camera.target[1]+camera.distance*Math.sin(camera.elevation),camera.target[2]+camera.distance*ce*Math.cos(camera.azimuth)];}
+    function reset(){camera.target=[-2,12,-4];camera.azimuth=.73;camera.elevation=.47;camera.distance=306;camera.street=false;camera.fly=false;syncButtons();}
+    function toggleView(){camera.fly=false;camera.street=!camera.street;if(camera.street){camera.target=[-5,13,-8];camera.azimuth=.18;camera.elevation=.105;camera.distance=118;}else{camera.target=[-2,12,-4];camera.azimuth=.73;camera.elevation=.47;camera.distance=306;}syncButtons();}
+    function toggleFly(){camera.fly=!camera.fly;syncButtons();}
+    function toggleTime(){sunsetTarget=sunsetTarget?0:1;document.getElementById('modeLabel').textContent=sunsetTarget?'Golden-hour sunset':'Clear day';syncButtons();}
+    function syncButtons(){document.querySelector('[data-action="fly"]').classList.toggle('active',camera.fly);document.querySelector('[data-action="time"]').classList.toggle('active',!!sunsetTarget);document.querySelector('[data-action="view"]').classList.toggle('active',camera.street);document.querySelector('[data-action="view"]').lastChild.textContent=camera.street?' Aerial view':' Street view';}
+    const actions={reset,toggleFly,toggleTime,toggleView};
+    document.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>actions['toggle'+b.dataset.action[0].toUpperCase()+b.dataset.action.slice(1)]?.()||actions[b.dataset.action]?.()));
+    addEventListener('keydown',e=>{if(e.repeat)return;const k=e.key.toLowerCase();if(k==='r')reset();if(k==='f')toggleFly();if(k==='t')toggleTime();if(k==='v')toggleView();});
+    canvas.addEventListener('contextmenu',e=>e.preventDefault());
+    canvas.addEventListener('pointerdown',e=>{canvas.setPointerCapture(e.pointerId);drag={x:e.clientX,y:e.clientY,button:e.button};camera.fly=false;canvas.classList.add('dragging');syncButtons();});
+    canvas.addEventListener('pointermove',e=>{if(!drag)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;drag.x=e.clientX;drag.y=e.clientY;if(drag.button===0){camera.azimuth-=dx*.005;camera.elevation=clamp(camera.elevation+dy*.004,.035,1.28);}else{const s=camera.distance*.0018,sa=Math.sin(camera.azimuth),ca=Math.cos(camera.azimuth);camera.target[0]+=(-ca*dx-sa*dy)*s;camera.target[2]+=(sa*dx-ca*dy)*s;camera.target[1]+=dy*s*.3;}});
+    canvas.addEventListener('pointerup',()=>{drag=null;canvas.classList.remove('dragging');});
+    canvas.addEventListener('wheel',e=>{e.preventDefault();camera.fly=false;camera.distance=clamp(camera.distance*Math.exp(e.deltaY*.001),45,650);syncButtons();},{passive:false});
+
+    gl.useProgram(program);gl.uniform1i(uni.atlas,0);gl.enable(gl.DEPTH_TEST);gl.enable(gl.CULL_FACE);gl.cullFace(gl.BACK);gl.enable(gl.BLEND);gl.blendFunc(gl.SRC_ALPHA,gl.ONE_MINUS_SRC_ALPHA);
+    function resize(){const dpr=Math.min(devicePixelRatio||1,2),w=Math.floor(innerWidth*dpr),h=Math.floor(innerHeight*dpr);if(canvas.width!==w||canvas.height!==h){canvas.width=w;canvas.height=h;gl.viewport(0,0,w,h);}}
+    function render(now){
+      const dt=Math.min((now-last)/1000,.05);last=now;elapsed+=dt;sunset=mix(sunset,sunsetTarget,1-Math.exp(-dt*2.1));
+      if(camera.fly){const phase=(elapsed*.115)%1;camera.azimuth+=dt*.075;camera.target[0]=mix(camera.target[0],-2,dt);camera.target[2]=mix(camera.target[2],-4,dt);const rise=.5-.5*Math.cos(phase*TAU);camera.elevation=mix(.15,.68,rise);camera.distance=mix(175,350,rise);}
+      resize();const eye=cameraPos(),p=perspective(45*PI/180,canvas.width/canvas.height,.3,1100),v=lookAt(eye,camera.target),vp=multiply(p,v);
+      const skyDay=[.57,.72,.82],skySet=[.60,.38,.30],sky=skyDay.map((v,i)=>mix(v,skySet[i],sunset));
+      gl.clearColor(...sky,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.useProgram(program);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,atlas);
+      gl.uniformMatrix4fv(uni.vp,false,vp);gl.uniform3fv(uni.camera,eye);gl.uniform3fv(uni.sunDir,sunset?[.72,.36,.42]:[.43,.84,.34]);gl.uniform3fv(uni.sunColor,[mix(1,.98,sunset),mix(.98,.63,sunset),mix(.9,.39,sunset)]);gl.uniform3fv(uni.sky,sky);gl.uniform1f(uni.sunset,sunset);gl.uniform1f(uni.time,elapsed);
+      for(const pool of gpuPools){if(pool.tier===1&&camera.distance>610)continue;gl.depthMask(!pool.transparent);gl.bindVertexArray(pool.vao);gl.drawArraysInstanced(gl.TRIANGLES,0,geoms[pool.mesh].count,pool.count);}
+      gl.depthMask(true);frames++;fpsTime+=dt;if(fpsTime>.75){document.getElementById('fps').textContent=`Living city · ${Math.round(frames/fpsTime)} fps`;frames=0;fpsTime=0;}
+      requestAnimationFrame(render);
+    }
+    syncButtons();requestAnimationFrame(render);setTimeout(()=>document.getElementById('loader').classList.add('done'),650);
+  })();
+  </script>
+</body>
+</html>
