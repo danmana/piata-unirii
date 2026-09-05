@@ -82,7 +82,14 @@
         return section;
       };
 
-      root.append(makePane(0), makePane(1));
+      const defaultIndex = (name, fallback) => {
+        const index = runs.findIndex(run => run.name === name);
+        return index < 0 ? fallback : index;
+      };
+      root.append(
+        makePane(defaultIndex('fable-5.1-xhigh-01', 0)),
+        makePane(defaultIndex('gpt-astra-xhigh-01', 1)),
+      );
     }
   </script>
 </body>
