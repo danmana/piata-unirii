@@ -16,5 +16,14 @@
     "effort": "xhigh",
     "startedAt": "2026-09-04T08:46:35Z",
     "durationSeconds": 4800
+  },
+  {
+    "name": "gpt-astra-xhigh-01",
+    "provider": "OpenAI",
+    "agent": "Codex",
+    "model": "GPT-Astra",
+    "effort": "xhigh",
+    "startedAt": "2026-09-05T06:59:45Z",
+    "durationSeconds": 2180
   }
 ]

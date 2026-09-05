@@ -1,0 +1,48 @@
+{
+  "verifiedAt": "2026-09-05T07:34:09Z",
+  "browser": "Chrome 152.0.7977.76, headless, local desktop",
+  "viewport": { "width": 1440, "height": 1000, "deviceScaleFactor": 1 },
+  "offline": true,
+  "entryMethod": "Direct file URL; no server and no file-access overrides",
+  "performance": {
+    "measurement": "Rendered animation frames divided by actual performance.now elapsed time over four seconds per mode",
+    "dayFPS": 59.95,
+    "sunsetFPS": 59.94,
+    "initialDrawCalls": 286,
+    "staticVoxels": 145333,
+    "staticPools": 753
+  },
+  "population": { "people": 116, "vehicles": 12, "pigeons": 18 },
+  "allocation": {
+    "fixedPerimeterFrontages": 24,
+    "reservedFootprints": 1450,
+    "buildingBuildingCollisions": 0,
+    "buildingRoadCollisions": 0,
+    "deterministicLayoutSHA256": "9ab7705cf1367e9768307fe532fb3a4cbfbf6f7d950c08a0d0cdb5254d421557"
+  },
+  "externalRequests": 0,
+  "pageErrors": 0,
+  "labelOverlaps": 0,
+  "flyoverObservedHeightsMetres": { "rooftop": 36.76, "aerial": 211.00 },
+  "lodVisiblePools": { "near": 726, "far": 622 },
+  "mobileViewport": { "width": 390, "height": 844, "horizontalOverflow": false, "allControlsVisible": true },
+  "passed": [
+    "Offline direct file loading",
+    "Shortcuts R, F, T, V, L",
+    "Left-button orbit, right-button pan, wheel zoom",
+    "Re-centre returns to the opening composition",
+    "Flyover begins at rooftop height and rises into an aerial view",
+    "Day and sunset rendered screenshots inspected",
+    "Street preset settles below four metres",
+    "Landmark labels hidden by default, camera-facing, projected, culled and non-overlapping",
+    "All 24 fixed perimeter frontages present",
+    "All reserved secondary building footprints clear of other buildings and roads",
+    "Distance-based detail reduction",
+    "Mobile resize and visible control dock",
+    "Identical layout allocations in a second independent page load",
+    "Graphics-context interruption produces a readable error and retry action",
+    "JavaScript syntax checks",
+    "Source bundle rebuild",
+    "Whitespace diff check"
+  ]
+}
