@@ -39,6 +39,13 @@
     button.active kbd{color:#e5c68f}
     .hint{position:fixed;z-index:3;right:22px;bottom:22px;display:grid;gap:6px;justify-items:end;color:white;text-shadow:0 1px 10px rgba(0,0,0,.4);pointer-events:none}
     .hint span{padding:6px 9px;border-radius:999px;background:rgba(28,34,32,.23);backdrop-filter:blur(8px);font-size:9px;letter-spacing:.08em}
+    .landmarks{position:fixed;z-index:2;inset:0;overflow:hidden;pointer-events:none}
+    .landmark-label{position:absolute;left:0;top:0;min-width:max-content;padding:5px 8px 6px;border:1px solid rgba(74,66,52,.24);border-radius:2px;background:rgba(247,240,224,.9);box-shadow:0 5px 15px rgba(36,34,27,.15);color:#2a302d;opacity:0;visibility:hidden;transform:translate(-50%,calc(-100% - 12px));transition:opacity .18s ease;backdrop-filter:blur(7px);text-align:center}
+    .landmark-label.show{opacity:1;visibility:visible}
+    .landmark-label strong{display:block;font:600 10px/1.15 Georgia,"Times New Roman",serif;letter-spacing:.025em;white-space:nowrap}
+    .landmark-label small{display:block;margin-top:3px;color:#806c55;font:600 6px/1 system-ui,sans-serif;letter-spacing:.19em;text-transform:uppercase;white-space:nowrap}
+    .landmark-label:before{content:"";position:absolute;left:50%;top:100%;width:1px;height:9px;background:rgba(67,61,50,.47)}
+    .landmark-label:after{content:"";position:absolute;left:calc(50% - 2px);top:calc(100% + 8px);width:5px;height:5px;border-radius:50%;background:#a15d3c;box-shadow:0 0 0 2px rgba(247,240,224,.75)}
     .loader{position:fixed;z-index:10;inset:0;display:grid;place-items:center;background:#e9dfc9;transition:opacity .8s ease,visibility .8s}
     .loader.done{display:none}
     .loadmark{text-align:center}
@@ -55,6 +62,7 @@
 <body>
   <canvas id="scene" aria-label="Interactive voxel reconstruction of Piața Unirii in Cluj-Napoca"></canvas>
   <div class="grain"></div>
+  <div class="landmarks" id="landmarks" aria-hidden="true"></div>
   <header class="topbar">
     <div class="brand"><div class="seal">M</div><div><h1>Piața Unirii</h1><p>Cluj-Napoca · Transylvania</p></div></div>
     <div class="status"><i class="status-dot"></i><span id="fps">Living city · 60 fps</span></div>
@@ -71,7 +79,7 @@
       <button data-action="view"><kbd>V</kbd>Street view</button>
     </div>
   </section>
-  <div class="hint"><span>Left drag · orbit</span><span>Right drag · pan</span><span>Scroll · zoom</span></div>
+  <div class="hint"><span>L · landmark labels</span><span>Left drag · orbit</span><span>Right drag · pan</span><span>Scroll · zoom</span></div>
   <div class="loader" id="loader"><div class="loadmark"><div class="tower"></div><strong>Building Piața Unirii</strong><small>Assembling the living city</small></div></div>
   <div class="error" id="error"><div><h2>This miniature needs WebGL 2</h2><p>Please open it in a current desktop browser with hardware acceleration enabled.</p></div></div>
 
@@ -453,8 +461,38 @@
     function multiply(a,b){const o=new Float32Array(16);for(let c=0;c<4;c++)for(let r=0;r<4;r++)o[c*4+r]=a[r]*b[c*4]+a[4+r]*b[c*4+1]+a[8+r]*b[c*4+2]+a[12+r]*b[c*4+3];return o;}
 
     const camera={target:[-2,12,-4],azimuth:.73,elevation:.47,distance:306,street:false,fly:false};
-    let sunsetTarget=0,sunset=0,drag=null,last=performance.now(),elapsed=0,frames=0,fpsTime=0;
+    let sunsetTarget=0,sunset=0,labelsVisible=false,drag=null,last=performance.now(),elapsed=0,frames=0,fpsTime=0;
+    const landmarkLayer=document.getElementById('landmarks');
+    const labelData=[
+      {name:'St. Michael’s Church',kind:'Gothic landmark',point:[-4,94,-8],priority:0,maxDistance:560},
+      {name:'Matthias Corvinus Monument',kind:'Monumental ensemble',point:[-5,22,27],priority:1,maxDistance:440},
+      {name:'Bánffy Palace',kind:'Baroque palace',point:[114,36,3],priority:2,maxDistance:440},
+      {name:'Mirror Buildings',kind:'Historic gateway',point:[121,38,51],priority:3,maxDistance:420},
+      {name:'Former Hotel Continental',kind:'Historic landmark',point:[-108,38,84],priority:4,maxDistance:420},
+      {name:'Roman Napoca window',kind:'Archaeological display',point:[24,5,31],priority:5,maxDistance:350},
+      {name:'Southern fountain area',kind:'Public space',point:[31,8,62],priority:6,maxDistance:350},
+      {name:'Iuliu Maniu Street',kind:'Eastbound axis',point:[178,6,51],priority:7,maxDistance:380},
+      {name:'Bulevardul Eroilor',kind:'Southeast axis',point:[72,6,139],priority:8,maxDistance:380},
+      {name:'Memorandumului',kind:'Northwest axis',point:[-166,6,-85],priority:9,maxDistance:380}
+    ];
+    for(const label of labelData){const el=document.createElement('div');el.className='landmark-label';const name=document.createElement('strong'),kind=document.createElement('small');name.textContent=label.name;kind.textContent=label.kind;el.append(name,kind);landmarkLayer.appendChild(el);label.el=el;}
     function cameraPos(){const ce=Math.cos(camera.elevation);return [camera.target[0]+camera.distance*ce*Math.sin(camera.azimuth),camera.target[1]+camera.distance*Math.sin(camera.elevation),camera.target[2]+camera.distance*ce*Math.cos(camera.azimuth)];}
+    function toggleLabels(){labelsVisible=!labelsVisible;landmarkLayer.setAttribute('aria-hidden',String(!labelsVisible));if(!labelsVisible)for(const label of labelData)label.el.classList.remove('show');}
+    function updateLabels(vp,eye){
+      if(!labelsVisible)return;
+      const candidates=[];
+      for(const label of labelData){
+        const [x,y,z]=label.point,clipX=vp[0]*x+vp[4]*y+vp[8]*z+vp[12],clipY=vp[1]*x+vp[5]*y+vp[9]*z+vp[13],clipZ=vp[2]*x+vp[6]*y+vp[10]*z+vp[14],clipW=vp[3]*x+vp[7]*y+vp[11]*z+vp[15],distance=Math.hypot(x-eye[0],y-eye[1],z-eye[2]);
+        if(clipW<=0||distance>label.maxDistance){label.el.classList.remove('show');continue;}
+        const nx=clipX/clipW,ny=clipY/clipW,nz=clipZ/clipW;
+        if(nx<-.94||nx>.94||ny<-.86||ny>.9||nz<-.98||nz>1){label.el.classList.remove('show');continue;}
+        const sx=(nx*.5+.5)*innerWidth,sy=(-ny*.5+.5)*innerHeight,w=Math.min(210,label.name.length*6.2+24);
+        candidates.push({...label,sx,sy,box:[sx-w/2,sy-48,sx+w/2,sy-8]});
+      }
+      candidates.sort((a,b)=>a.priority-b.priority);
+      const placed=[];
+      for(const item of candidates){const overlap=placed.some(b=>item.box[0]<b[2]+8&&item.box[2]>b[0]-8&&item.box[1]<b[3]+8&&item.box[3]>b[1]-8);item.el.classList.toggle('show',!overlap);if(!overlap){item.el.style.transform=`translate(-50%,calc(-100% - 12px)) translate(${item.sx}px,${item.sy}px)`;placed.push(item.box);}}
+    }
     function reset(){camera.target=[-2,12,-4];camera.azimuth=.73;camera.elevation=.47;camera.distance=306;camera.street=false;camera.fly=false;syncButtons();}
     function toggleView(){camera.fly=false;camera.street=!camera.street;if(camera.street){camera.target=[-5,13,-8];camera.azimuth=.18;camera.elevation=.105;camera.distance=118;}else{camera.target=[-2,12,-4];camera.azimuth=.73;camera.elevation=.47;camera.distance=306;}syncButtons();}
     function toggleFly(){camera.fly=!camera.fly;syncButtons();}
@@ -462,7 +500,7 @@
     function syncButtons(){document.querySelector('[data-action="fly"]').classList.toggle('active',camera.fly);document.querySelector('[data-action="time"]').classList.toggle('active',!!sunsetTarget);document.querySelector('[data-action="view"]').classList.toggle('active',camera.street);document.querySelector('[data-action="view"]').lastChild.textContent=camera.street?' Aerial view':' Street view';}
     const actions={reset,toggleFly,toggleTime,toggleView};
     document.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>actions['toggle'+b.dataset.action[0].toUpperCase()+b.dataset.action.slice(1)]?.()||actions[b.dataset.action]?.()));
-    addEventListener('keydown',e=>{if(e.repeat)return;const k=e.key.toLowerCase();if(k==='r')reset();if(k==='f')toggleFly();if(k==='t')toggleTime();if(k==='v')toggleView();});
+    addEventListener('keydown',e=>{if(e.repeat)return;const k=e.key.toLowerCase();if(k==='r')reset();if(k==='f')toggleFly();if(k==='t')toggleTime();if(k==='v')toggleView();if(k==='l')toggleLabels();});
     canvas.addEventListener('contextmenu',e=>e.preventDefault());
     canvas.addEventListener('pointerdown',e=>{canvas.setPointerCapture(e.pointerId);drag={x:e.clientX,y:e.clientY,button:e.button};camera.fly=false;canvas.classList.add('dragging');syncButtons();});
     canvas.addEventListener('pointermove',e=>{if(!drag)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;drag.x=e.clientX;drag.y=e.clientY;if(drag.button===0){camera.azimuth-=dx*.005;camera.elevation=clamp(camera.elevation+dy*.004,.035,1.28);}else{const s=camera.distance*.0018,sa=Math.sin(camera.azimuth),ca=Math.cos(camera.azimuth);camera.target[0]+=(-ca*dx-sa*dy)*s;camera.target[2]+=(sa*dx-ca*dy)*s;camera.target[1]+=dy*s*.3;}});
@@ -479,6 +517,7 @@
       gl.clearColor(...sky,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.useProgram(program);gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,atlas);
       gl.uniformMatrix4fv(uni.vp,false,vp);gl.uniform3fv(uni.camera,eye);gl.uniform3fv(uni.sunDir,sunset?[.72,.36,.42]:[.43,.84,.34]);gl.uniform3fv(uni.sunColor,[mix(1,.98,sunset),mix(.98,.63,sunset),mix(.9,.39,sunset)]);gl.uniform3fv(uni.sky,sky);gl.uniform1f(uni.sunset,sunset);gl.uniform1f(uni.time,elapsed);
       for(const pool of gpuPools){if(pool.tier===1&&camera.distance>610)continue;gl.depthMask(!pool.transparent);gl.bindVertexArray(pool.vao);gl.drawArraysInstanced(gl.TRIANGLES,0,geoms[pool.mesh].count,pool.count);}
+      updateLabels(vp,eye);
       gl.depthMask(true);frames++;fpsTime+=dt;if(fpsTime>.75){document.getElementById('fps').textContent=`Living city · ${Math.round(frames/fpsTime)} fps`;frames=0;fpsTime=0;}
       requestAnimationFrame(render);
     }
