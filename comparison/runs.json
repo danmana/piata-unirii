@@ -34,5 +34,14 @@
     "effort": "xhigh",
     "startedAt": "2026-09-05T11:51:48Z",
     "durationSeconds": 9877
+  },
+  {
+    "name": "sonnet-5.5-xhigh-01",
+    "provider": "Anthropic",
+    "agent": "Claude Code",
+    "model": "sonnet-5.5",
+    "effort": "xhigh",
+    "startedAt": "2026-09-29T14:54:47Z",
+    "durationSeconds": 17790
   }
 ]

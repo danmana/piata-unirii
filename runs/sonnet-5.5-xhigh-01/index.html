@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:,">
+<title>Piața Unirii · Cluj-Napoca — voxel miniature</title>
+<style>
+  :root {
+    --ink: #3a3026;
+    --paper: rgba(246, 239, 224, 0.9);
+    --line: rgba(88, 70, 46, 0.55);
+    --accent: #b5502a;
+    --font: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    --ui: ui-sans-serif, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #b9cbe0; font-family: var(--ui); }
+  canvas#view { position: fixed; inset: 0; width: 100%; height: 100%; display: block; outline: none; touch-action: none; }
+  #labels { position: fixed; inset: 0; pointer-events: none; overflow: hidden; }
+  .lbl {
+    position: absolute; left: 0; top: 0; white-space: nowrap; will-change: transform, opacity;
+    font: 600 10.5px/1 var(--font); letter-spacing: .06em; color: var(--ink);
+    padding: 3px 7px 3px; background: var(--paper); border: 1px solid var(--line); border-radius: 2px;
+    box-shadow: 0 1px 0 rgba(255,255,255,.5) inset, 0 2px 6px rgba(40, 28, 10, .22);
+    transition: opacity .25s ease; text-transform: uppercase;
+  }
+  .lbl small { display: block; margin-top: 2px; font: italic 500 10px/1.1 var(--font); letter-spacing: .02em; text-transform: none; opacity: .75; }
+  .lbl::after { content: ""; position: absolute; left: 50%; top: 100%; width: 1px; height: var(--stem, 14px); background: var(--line); }
+  .lbl.below::after { top: auto; bottom: 100%; }
+  .lbl.street { background: transparent; border: none; box-shadow: none; color: rgba(255,255,255,.95); text-shadow: 0 1px 3px rgba(20,14,6,.85), 0 0 6px rgba(20,14,6,.55); padding: 0; font-size: 10.5px; font-style: italic; text-transform: none; letter-spacing: .08em; }
+  .lbl.street::after { display: none; }
+  #hud-title { position: fixed; left: 22px; top: 18px; color: #fff; text-shadow: 0 1px 4px rgba(20,14,6,.7); pointer-events: none; font-family: var(--font); }
+  #hud-title h1 { margin: 0; font-size: 22px; font-weight: 600; letter-spacing: .04em; }
+  #hud-title p { margin: 3px 0 0; font-size: 12px; letter-spacing: .14em; text-transform: uppercase; opacity: .85; }
+  #keys { position: fixed; left: 18px; bottom: 16px; display: flex; flex-wrap: wrap; gap: 6px; max-width: calc(100vw - 150px); }
+  .key { display: flex; align-items: center; gap: 7px; padding: 5px 10px 5px 6px; border-radius: 3px; background: rgba(38, 30, 20, .62); color: #f4ecdb; font: 500 11.5px/1 var(--ui); letter-spacing: .02em; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,.12); cursor: pointer; user-select: none; }
+  .key:hover { background: rgba(38, 30, 20, .8); }
+  .key b { display: inline-grid; place-items: center; min-width: 20px; height: 20px; border-radius: 3px; background: #f1e6cf; color: #3a3026; font: 700 11px/1 var(--ui); }
+  .key.on { background: rgba(181, 80, 42, .82); }
+  .key em { font-style: normal; opacity: .72; margin-left: 2px; }
+  #hint { position: fixed; right: 18px; bottom: 16px; color: rgba(255,255,255,.9); font: 11px/1.4 var(--ui); text-align: right; text-shadow: 0 1px 3px rgba(20,14,6,.8); pointer-events: none; }
+  #toast { position: fixed; left: 50%; top: 22px; transform: translate(-50%, -8px); padding: 8px 16px; border-radius: 3px; background: rgba(38,30,20,.78); color: #f4ecdb; font: 500 13px/1 var(--font); letter-spacing: .08em; text-transform: uppercase; opacity: 0; transition: opacity .3s, transform .3s; pointer-events: none; }
+  #toast.show { opacity: 1; transform: translate(-50%, 0); }
+  #loader { position: fixed; inset: 0; display: grid; place-items: center; background: radial-gradient(circle at 50% 40%, #e9dcc2, #b9a583); color: var(--ink); transition: opacity .8s ease; z-index: 10; font-family: var(--font); }
+  #loader.done { opacity: 0; pointer-events: none; }
+  #loader .box { width: min(420px, 82vw); text-align: center; }
+  #loader h2 { margin: 0 0 4px; font-size: 26px; font-weight: 600; letter-spacing: .04em; }
+  #loader p { margin: 0 0 22px; font-size: 12px; letter-spacing: .16em; text-transform: uppercase; opacity: .7; }
+  #loader .bar { height: 4px; background: rgba(58, 48, 38, .18); border-radius: 2px; overflow: hidden; }
+  #loader .bar i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .25s ease; }
+  #loader .step { margin-top: 12px; font: 11.5px/1.3 var(--ui); opacity: .7; min-height: 15px; }
+  #error { position: fixed; inset: 0; display: none; place-items: center; background: #2a231b; color: #f4ecdb; z-index: 20; padding: 24px; font: 14px/1.5 var(--ui); }
+  #error pre { white-space: pre-wrap; max-width: 900px; max-height: 70vh; overflow: auto; font-size: 11px; opacity: .8; }
+  @media (max-width: 640px) { #hud-title h1 { font-size: 17px; } #hint { display: none; } #keys { max-width: 100vw; } }
+</style>
+</head>
+<body>
+<canvas id="view" tabindex="0"></canvas>
+<div id="labels"></div>
+<div id="hud-title"><h1>Piața Unirii</h1><p>Cluj-Napoca · voxel miniature</p></div>
+<div id="keys"></div>
+<div id="hint"><span id="fps"></span><br>drag · rotate &nbsp; right-drag · pan &nbsp; scroll · zoom</div>
+<div id="toast"></div>
+<div id="loader"><div class="box"><h2>Piața Unirii</h2><p>Building the miniature</p><div class="bar"><i id="lbar"></i></div><div class="step" id="lstep">Starting…</div></div></div>
+<div id="error"><div><h2>Something went wrong</h2><pre id="errtxt"></pre></div></div>
+
+<script src="js/core.js"></script>
+<script src="js/palette.js"></script>
+<script src="js/voxel.js"></script>
+<script src="js/atlas.js"></script>
+<script src="js/renderer.js"></script>
+<script src="js/env.js"></script>
+<script src="js/camera.js"></script>
+<script src="js/layout.js"></script>
+<script src="js/ground.js"></script>
+<script src="js/build.js"></script>
+<script src="js/church.js"></script>
+<script src="js/monument.js"></script>
+<script src="js/facades.js"></script>
+<script src="js/heroes.js"></script>
+<script src="js/city.js"></script>
+<script src="js/blocks.js"></script>
+<script src="js/suburbs.js"></script>
+<script src="js/props.js"></script>
+<script src="js/actors.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
