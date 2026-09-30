@@ -77,18 +77,48 @@
           frame.title = run.name;
         };
 
-        select.addEventListener('change', show);
+        select.addEventListener('change', () => {
+          show();
+          syncUrl();
+        });
         show();
         return section;
       };
 
-      const defaultIndex = (name, fallback) => {
-        const index = runs.findIndex(run => run.name === name);
-        return index < 0 ? fallback : index;
+      // ?vs=left,right — each side is a run name or a unique leading part of one (e.g. opus-5.5).
+      const matches = key => runs.filter(run => run.name === key || run.name.startsWith(`${key}-`));
+      const findIndex = key => {
+        const exact = runs.findIndex(run => run.name === key);
+        return exact >= 0 ? exact : runs.indexOf(matches(key)[0]);
       };
+      const shortName = run => {
+        const parts = run.name.split('-');
+        let short = run.name;
+        for (let length = parts.length - 1; length >= 2; length--) {
+          const key = parts.slice(0, length).join('-');
+          const found = matches(key);
+          if (found.length !== 1 || found[0] !== run) break;
+          short = key;
+        }
+        return short;
+      };
+      const syncUrl = () => {
+        const selects = [...root.querySelectorAll('select')];
+        const url = new URL(location.href);
+        url.searchParams.set('vs', selects.map(select => shortName(runs[Number(select.value)])).join(','));
+        history.replaceState(null, '', url.toString().replace(/%2C/g, ','));
+      };
+      const pick = (key, name, fallback) => {
+        for (const candidate of [key, name]) {
+          const index = candidate ? findIndex(candidate) : -1;
+          if (index >= 0) return index;
+        }
+        return fallback;
+      };
+      const [left, right] = (new URLSearchParams(location.search).get('vs') || '').split(',');
       root.append(
-        makePane(defaultIndex('opus-5.5-xhigh-01', 0)),
-        makePane(defaultIndex('sonnet-5.5-xhigh-01', 1)),
+        makePane(pick(left, 'opus-5.5-xhigh-01', 0)),
+        makePane(pick(right, 'sonnet-5.5-xhigh-01', 1)),
       );
     }
   </script>
