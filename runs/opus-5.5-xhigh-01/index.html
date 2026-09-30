@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Piața Unirii · Cluj-Napoca — voxel miniature</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="./style.css">
+  <script type="importmap">
+    { "imports": { "three": "./lib/three.module.js" } }
+  </script>
+</head>
+<body>
+  <canvas id="view" tabindex="0" aria-label="Voxel miniature of Piața Unirii, Cluj-Napoca"></canvas>
+  <div id="labels" aria-hidden="true"></div>
+
+  <div id="hud">
+    <div class="title"><span class="name">Piața Unirii</span><span class="city">Cluj-Napoca</span></div>
+    <div class="keys">
+      <span><kbd>R</kbd> recentre</span>
+      <span><kbd>F</kbd> flyover</span>
+      <span><kbd>T</kbd> <em id="tod-name">day</em></span>
+      <span><kbd>V</kbd> <em id="view-name">street / aerial</em></span>
+      <span><kbd>L</kbd> labels</span>
+      <span><kbd>H</kbd> help</span>
+    </div>
+  </div>
+  <div id="compass" aria-hidden="true"><div class="needle">N</div></div>
+  <div id="stats" hidden></div>
+
+  <div id="help" hidden>
+    <h2>Piața Unirii — controls</h2>
+    <dl>
+      <dt>Left drag</dt><dd>rotate</dd>
+      <dt>Right drag</dt><dd>pan (or Shift + drag)</dd>
+      <dt>Scroll</dt><dd>zoom towards the cursor</dd>
+      <dt>R</dt><dd>re-centre on St. Michael’s and the Matthias Corvinus monument</dd>
+      <dt>F</dt><dd>cinematic flyover (rooftop orbit, then aerial)</dd>
+      <dt>T</dt><dd>clear day / golden-hour sunset</dd>
+      <dt>V</dt><dd>street level / aerial overview</dd>
+      <dt>L</dt><dd>floating landmark labels</dd>
+      <dt>N</dt><dd>new variation seed (people, cars, cafés, trees, window lights)</dd>
+      <dt>P</dt><dd>performance stats</dd>
+    </dl>
+    <p class="small">Voxel miniature · deterministic seeded generation · runs fully offline.</p>
+  </div>
+
+  <div id="loader">
+    <div class="card">
+      <div class="lt">Piața Unirii</div>
+      <div class="ls">Cluj-Napoca · voxel miniature</div>
+      <div class="bar"><div class="fill" id="load-fill"></div></div>
+      <div class="stage" id="load-stage">Preparing…</div>
+    </div>
+  </div>
+  <div id="error" hidden></div>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>

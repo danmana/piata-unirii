@@ -43,5 +43,14 @@
     "effort": "xhigh",
     "startedAt": "2026-09-29T14:54:47Z",
     "durationSeconds": 17790
+  },
+  {
+    "name": "opus-5.5-xhigh-01",
+    "provider": "Anthropic",
+    "agent": "Claude Code",
+    "model": "opus-5.5",
+    "effort": "xhigh",
+    "startedAt": "2026-09-29T14:54:20Z",
+    "durationSeconds": 19558
   }
 ]
